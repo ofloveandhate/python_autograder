@@ -92,3 +92,11 @@ You should know and communicate the following to your students:
 
 * `get_current_students.py` -- A python file which uses your Canvas API_KEY to get the current student list.  Uses `canvas_course_ids.json`.
 * readme.md -- this file, aren't you glad it's here 🌈
+
+
+---
+
+# Risks
+
+* ⚠️ This autograder executes student-submitted code on your computer.  You should probably run this code in a virtual machine specially set up for this purpose, not on your precious hard drive.  There is no way of knowing if a student submitted malicious code.
+* ⚠️ This autograder does not solve the problem of detecting copied code.  This only executes student code against tests and summarizes the data in a few reports.
