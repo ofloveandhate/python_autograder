@@ -7,8 +7,8 @@ This repo contains code used for assistive autograding homework submissions, sub
 # Setup
 
 Add two environment variables to your shell login file:
-1.  $DS710_REPO_LOC, giving the folder for the git repo for this class
-2.  $CANVAS_CREDENTIAL_FILE, giving the path *and name* of a `.py` file containing one line of code:
+1.  `$coursenum_REPO_LOC`, giving the folder for the git repo for your class, where `coursenum` should be a code like `DS150` or `MATH114`.  So a complete variable name might be `DS710_REPO_LOC`.  
+2.  `$CANVAS_CREDENTIAL_FILE`, giving the path *and name* of a `.py` file containing one line of code:
 ```
 API_KEY = "mykeyfromcanvasene4i1n24ein1o2ie3n4i1oe2n"
 ``` 
@@ -28,9 +28,14 @@ You must also install the following packages in Python:
 
 # How to autograde a homework assignment using this autograder
 
-1. Download submissions from each section on Canvas.  I like running autograder on one section during testing (for speed), and on multiple sections for actual processing.  I make a new directory, and copy in all submissions.
+Each assignment uses the `pytest` library for unit tests, in two blocks: one is distributed to the students, the other is kept to the instructor and never distributed.  The student submissions are passed through the unit tests, and the results tabulated into a CSV and a markdown file, which you can use to give feedback.
+
+
+1. Download submissions from each section on Canvas.  If I have multiple sections, I like running autograder on one section during testing (for speed), and on multiple sections for actual processing.  To do this, I make a new directory, and copy in all submissions.
 2. Move to the the folder containing the files you want to grade.
-3. Run the command `$DS710_REPO_LOC/autograding/autograde.sh #`, where # is the shortname of the lesson (e.g. `1` or `4a`).
+3. Run the command `autograde.sh coursenum N`. For example, `autograde.sh DS710 4a`.  That is,
+  * `coursenum` matches the name of the environment variable pointing to the folder for your course content (including case)
+  * `N` is the shortname of the lesson/assignment (e.g. `1` or `4a`).  
 4. Hope
 5. The results should be contained in a folder called `_autograding` (the _ is there to keep it at the top).
 6. Inspect the results. You should see
@@ -39,13 +44,11 @@ You must also install the following packages in Python:
   * two results folders
   * The checkers which were executed.  
   * The data files should probably also be in here.  If not, then add code to `autograde.sh` to move them in.  
-7. If satisfied, copy the feedback files to somewhere else or rename them.
+7. If satisfied, copy the feedback files to somewhere else or rename them, so that if you have to re-run the autograder, you won't lose your comments.
 8. Open the submissions folder with the code in a nice text editor.  Open the feedback files in another.  Grade as you will.
 
 
 ---
-
-Each assignment uses the `pytest` library for unit tests, in two blocks: one is distributed to the students, the other is kept to the instructor and never distributed.
 
 # Necessary structure for this autograder to work
 
@@ -86,12 +89,12 @@ You should know and communicate the following to your students:
 
 ## Source
 
-* `autograde.sh` -- the core file.  Run it with one argument -- the shortcode of the assignment.
+* `autograde.sh` -- the core file, a bash script.  Run it with two arguments -- the course code, and the shortcode of the assignment.  
 
 * `assignment_grade_collector.py` -- uses Pandas to parse the checker results files in `_autograding/pre_checker_results` and `_autograding/post_checker_results`, and turn them into the feedback files and the csv with scores.
 
 * `get_current_students.py` -- A python file which uses your Canvas API_KEY to get the current student list.  Uses `canvas_course_ids.json`.
-* readme.md -- this file, aren't you glad it's here 🌈
+* `readme.md` -- this file, aren't you glad it's here 🌈
 
 
 ---
