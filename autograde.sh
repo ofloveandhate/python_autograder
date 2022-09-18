@@ -15,6 +15,11 @@
 # ready???? go!!!
 # https://www.youtube.com/watch?v=26NTZpAiPyE&ab_channel=PrestonWardCondra
 
+
+# first, get the directory of this script, because other useful things are in there, too.
+SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
+
+
 # https://stackoverflow.com/questions/3474526/stop-on-first-error
 set -e
 
@@ -36,7 +41,6 @@ if [ -z $2 ];
 		# https://stackoverflow.com/questions/3601515/how-to-check-if-a-variable-is-set-in-bash
 		echo "a second positional argument is required, indicating the number of the assignment.  e.g. the '1' or '4' in 'autograde.sh DS710 1', or 'autograde.sh DS150 4a'";
 		exit 1 # https://stackoverflow.com/questions/1378274/in-a-bash-script-how-can-i-exit-the-entire-script-if-a-certain-condition-occurs
-	else
 fi
 
 if [ -z ${COURSE_REPO_LOC+x} ];
@@ -44,8 +48,6 @@ if [ -z ${COURSE_REPO_LOC+x} ];
 		# https://stackoverflow.com/questions/3601515/how-to-check-if-a-variable-is-set-in-bash
 		echo "environment variable '$COURSE_REPO_LOC' unset.  set it to the path of the github repo for '$1'.";
 		exit 1 # https://stackoverflow.com/questions/1378274/in-a-bash-script-how-can-i-exit-the-entire-script-if-a-certain-condition-occurs
-	else
-
 fi
 
 echo "autograding $1 assignment $2 using autograding files from '$COURSE_REPO_LOC'";
@@ -53,18 +55,19 @@ echo "autograding $1 assignment $2 using autograding files from '$COURSE_REPO_LO
 ################3
 # move pdf's to make view less shitty
 echo "moving pdf's to ./reflections"
-python "$COURSE_REPO_LOC"/autograding/move_reflections.py
+python ${SCRIPT_DIR}/move_reflections.py
 
 
 ##########
 # copy necessary data files
 
 # if the assignment has a spec for needed data files
-dfiles="$COURSE_REPO_LOC/autograding/necessary_data_files/$2.txt"
+dfiles="${!COURSE_REPO_LOC}/_course_metadata/necessary_data_files/$2.txt"
 if test -f $dfiles; then
+	echo "copying data files as described in $dfiles"
 	while IFS="" read -r p || [ -n "$p" ]
 	do
-		cp "$COURSE_REPO_LOC/Lesson_$2/$p" ./
+		cp "${!COURSE_REPO_LOC}/Lesson_$2/$p" ./
 	done < $dfiles
 fi
 
@@ -75,7 +78,7 @@ fi
 
 
 # copy the checker file to this folder.  this is because the checker imports the file, and if it's not in the same location, things break.
-prechecker=$COURSE_REPO_LOC/Lesson_$2/assignment$2_checker.py
+prechecker=${!COURSE_REPO_LOC}/Lesson_$2/assignment$2_checker.py
 echo "grading using pre-submission checker $prechecker"
 
 cp "$prechecker" ./
@@ -107,7 +110,7 @@ mv "./assignment$2_checker.py" ./_autograding
 set -e
 ################
 # run the post-submission checker for every submitted file
-postchecker="$COURSE_REPO_LOC/Lesson_$2/assignment$2_postsubmission_checker.py"
+postchecker="${!COURSE_REPO_LOC}/Lesson_$2/assignment$2_postsubmission_checker.py"
 echo "grading using post-submission checker $postchecker"
 cp "$postchecker" ./
 
@@ -134,13 +137,13 @@ mv "./assignment$2_postsubmission_checker.py" ./_autograding
 ####################################
 # get the current student list, so that students who didn't submit can get 0's
 echo 'getting current student list from Canvas, automatically'
-python "$COURSE_REPO_LOC"/autograding/get_current_students.py
+python "${SCRIPT_DIR}"/get_current_students.py $COURSE_REPO_LOC
 
 
 #################################
 # collect the results, using our friend, python
 echo 'collecting and formatting'
-python "$COURSE_REPO_LOC"/autograding/assignment_grade_collector.py
+python "${SCRIPT_DIR}"/assignment_grade_collector.py $COURSE_REPO_LOC
 
 
 echo "done.  results and artifacts in ./autograding/"

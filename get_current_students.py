@@ -10,6 +10,13 @@ import os
 import sys
 
 
+print(sys.argv)
+try:
+	repo_variable_name = sys.argv[1]
+except:
+	raise RuntimeError(f'script `get_current_students` is intended to be called with the name of an environment variable after the script name.  add it.  for example, `DS150_REPO_LOC`')
+
+
 def get_key():
 	cred_loc = os.environ.get('CANVAS_CREDENTIAL_FILE')
 	if cred_loc is None:
@@ -29,19 +36,19 @@ def get_key():
 
 
 
-def get_current_course_ids():
-	repo_loc = os.environ.get('DS710_REPO_LOC')
+def get_current_course_ids(repo_variable_name):
+	repo_loc = os.environ.get(repo_variable_name)
 	if repo_loc is None:
-		print('`get_current_students.py` needs an environment variable `DS710_REPO_LOC`, containing the full path of git repo for DS710')
+		print(f'`get_current_students.py` needs an environment variable `{repo_variable_name}`, containing the full path of git repo for DS710')
 		sys.exit()
 
 	import json
-	with open(os.path.join(repo_loc, 'autograding/canvas_course_ids.json')) as file:
-		canvas_course_metadata = json.loads(file.read())
+	with open(os.path.join(repo_loc, '_course_metadata/canvas_course_ids.json')) as file:
+		canvas_course_info = json.loads(file.read())
 
-	# print(canvas_course_metadata)
+	# print(canvas_course_info)
 	from datetime import datetime
-	for name, semester in canvas_course_metadata.items():
+	for name, semester in canvas_course_info.items():
 		right_now = datetime.now()
 
 		start = datetime.strptime(semester['dates']['start'],'%Y-%m-%d')
@@ -83,7 +90,7 @@ def get_data(canvas, course_id):
 if __name__=="__main__":
 
 	canvas = make_canvas()
-	course_ids = get_current_course_ids()
+	course_ids = get_current_course_ids(repo_variable_name)
 
 	students = []
 	for course_id in course_ids:
