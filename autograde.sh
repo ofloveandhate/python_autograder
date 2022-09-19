@@ -91,16 +91,24 @@ fi
 
 set +e
 # $() needed in case filenames have spaces.  weird characters still likely to break this.
-for i in $(ls *.py); do
+
+
+OIFS="$IFS"
+IFS=$'\n'
+
+for filename in `find . -type f -name "*.py"`; do
+# for i in $(ls *.py); do
 	# about the 2>, see https://stackoverflow.com/questions/14246119/python-how-can-i-redirect-the-output-of-unittest-obvious-solution-doesnt-wor/22710204
 
-	if [[ "$i" != *"checker.py" ]]; then
-	  if [[ "$i" != *"assignment$2"*".py" ]]; then
-	  	echo "incorrectly named submission, $i"
+	if [[ "$filename" != *"checker.py" ]]; then
+	  echo "$filename"
+	  if [[ "$filename" != *"assignment$2"*".py" ]]; then
+	  	echo "incorrectly named submission, $filename"
+	  	continue
 	  fi
-	  timeout --foreground 30s python assignment$2_checker.py "$i" 2> ./_autograding/pre_checker_results/"$i".txt 1> ./_autograding/pre_checker_results/"$i"_their_output.out
+	  timeout --foreground 30s pytest --junitxml=./_autograding/pre_checker_results/"$filename".xml assignment$2_checker.py "$filename" 1> ./_autograding/pre_checker_results/"$filename"_their_output.out
 	fi
-done;
+done #< <(find . -maxdepth 1 -type d -print0)
 
 # remove empty files
 find ./_autograding/pre_checker_results/ -name "*output.out" -size  0  -delete
@@ -119,9 +127,10 @@ if [ ! -d ./_autograding/post_checker_results ]; then
 fi
 
 set +e
-for i in $(ls *.py); do
-	if [[ "$i" != *"checker.py" ]]; then
-	  timeout --foreground 30s python "assignment$2_postsubmission_checker.py" "$i" 2> ./_autograding/post_checker_results/"$i".txt 1> ./_autograding/post_checker_results/"$i"_their_output.out
+for filename in `find . -type f -name "*.py"`; do
+	if [[ "$filename" != *"checker.py" ]]; then
+	  echo "$filename"
+	  timeout --foreground 30s pytest --junitxml=./_autograding/post_checker_results/"$filename".xml "assignment$2_postsubmission_checker.py" "$filename" 1> ./_autograding/post_checker_results/"$i"_their_output.out
 	fi
 
 done;

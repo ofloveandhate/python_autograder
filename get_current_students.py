@@ -101,7 +101,11 @@ if __name__=="__main__":
 
 	df = pd.DataFrame(data=students, columns=['student_id','canvas_name','section'])
 	df.sort_values(by=['section','canvas_name'], inplace=True)
-	df.to_csv('_autograding/student_list.csv',index=False)
+
+	filepath = '_autograding/student_list.csv'
+	df.to_csv(filepath,index=False)
+
+	print(f'wrote {filepath}')
 
 
 
