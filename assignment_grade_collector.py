@@ -32,33 +32,6 @@ def process_filename(filename):
     return d
 
 
-def get_num_passes(filepath):
-    """
-    computes the number of passed tests by reading the top lines of the checker output,
-    namely by counting the number of .'s
-
-    this number will be incorrect if there's screenout in the middle of the string
-    this can only be prevented by capturing all warnings and printing during all tests,
-    which makes the test output significantly less useful.
-    """
-    with open(filepath,'r') as file:
-        data = file.read()
-
-
-    as_lines = data.split('\n')
-
-    topline = as_lines.pop(0)
-
-    while len(set(topline)-set('.EF'))>0:
-        if 'Warning' in topline:
-            as_lines.pop(0) # the next line is a follow-on to the warning we're skipping
-            topline = as_lines.pop(0)
-        else:
-            topline = as_lines.pop(0)
-
-    num_fails = len(topline) - topline.count('.')
-    return topline.count('.'), topline
-
 
 
 
@@ -67,6 +40,13 @@ def get_num_passes(filepath):
 
 
 def collect(path):
+    """
+    returns: a pandas data frame
+
+    Parses unit test output (junit xml files) from the assistive grading tool (pytest)
+    """
+
+
 
     name = []
     student_id = []
@@ -84,7 +64,7 @@ def collect(path):
 
     files = os.listdir(path)
     for f in files:
-        if f.endswith('.xml'):
+        if f.endswith('.xml') and not f.endswith('_sol.py.xml'):
 
             dirname = os.path.dirname(f)
             pyname = os.path.basename(f[:-4])
@@ -112,7 +92,7 @@ def collect(path):
                 for case in suite:
                     for something in case:
                         if isinstance(something,junitparser.junitparser.Failure):
-                            print(f'encountered test failure in case {case.name}')
+                            # print(f'encountered test failure in case {case.name}')
                             failures.append(case)
 
             failure_cases.append(failures)
@@ -121,7 +101,7 @@ def collect(path):
 
 
     df = pd.DataFrame({'name':name, "student_id":student_id,"file_number":file_number, 
-                       'feedback':auto_feedback, "num_passes":num_passes, "num_fails":num_fails, "num_errors":num_errors, 'num_tests':num_tests, 'failure_cases':failure_cases})
+                       'auto_feedback':auto_feedback, "num_passes":num_passes, "num_fails":num_fails, "num_errors":num_errors, 'num_tests':num_tests, 'failure_cases':failure_cases})
     df['percent_pass'] = df['num_passes']/df['num_tests']
 
     return df
@@ -135,13 +115,8 @@ def tests_to_feedback(xml, filepath):
 
     feedback = ''
 
-
     if xml.failures>0 or xml.errors>0:
         header = f'In assistive grading, while running {xml.tests} total tests, `pytest` found \n• {xml.failures} test failures (meaning a coded logical check on the values of variables in a checker), and \n• {xml.errors} tests which ran with errors.'
-
-
-
-
 
         failure_why = []
         failures = []
@@ -165,12 +140,12 @@ def tests_to_feedback(xml, filepath):
                             def remove_module_thing(m):
 
                                 while (i := m.find('<module')) >= 0:
-                                    print(f'found module thing at {i}')
-                                    print(f'\n\nARSTARST\n\n{m}')
+                                    # print(f'found module thing at {i}')
+                                    # print(f'\n\nARSTARST\n\n{m}')
                                     j = m[i:].find('>')
                                     m = m[:i]+'your_code'+m[i+j+1:]
 
-                                print(m)
+                                # print(m)
                                 return m
 
                             m = remove_module_thing(format_message(something.message))
@@ -208,11 +183,11 @@ def combine_feedback(row):
     feedback = feedback + '# Automatically generated feedback on your last submitted code'
     if row['percent_pass_pre']<1:
         feedback = feedback + '\n\n## While grading, we detected that the following issues from the provided assignment checker file:\n\n'
-        feedback = feedback + row['feedback_pre']
+        feedback = feedback + row['auto_feedback_pre']
 
     if row['percent_pass_post']<1:
         feedback = feedback + '\n\n## While grading, we detected that the following issues from an instructor-only checker file:\n\n'
-        feedback = feedback + row['feedback_post']
+        feedback = feedback + row['auto_feedback_post']
 
     # put line of code indicating autograder raw score here
     return feedback
@@ -223,7 +198,7 @@ def format_feedback(row):
     """
     a function to apply to the data frame, adding some stuff to end of the feedback
     """
-    val = '\n{}\n\n{}\n'.format(row['canvas_name'],row['feedback_combined'])
+    val = '\n{}\n\n{}\n'.format(row['canvas_name'],row['auto_feedback_combined'])
     val = val + '\nEnd of code feedback for {}.\n\n'.format(row['canvas_name'])
     val = val + '\n**********************\nNext student\n===================\n'
     return val
@@ -291,7 +266,7 @@ def write_grades_to_csv(grades):
     """
     # grades.set_index('student_id')
 
-    grades.drop(['feedback_pre','feedback_post','feedback_combined','name_pre','name_post','file_number_post','failure_cases_pre','failure_cases_post'],inplace=True,axis=1)
+    grades.drop(['auto_feedback_pre','auto_feedback_post','auto_feedback_combined','name_pre','name_post','file_number_post','failure_cases_pre','failure_cases_post'],inplace=True,axis=1)
 
     grades = grades.merge(students, left_on = ['student_id'], right_on =['student_id'], how = 'right')
 
@@ -324,20 +299,22 @@ if __name__=="__main__":
 
     grades = presub.merge(postsub, on=('student_id'), suffixes=['_pre','_post'])
 
-    grades['feedback_combined'] = grades.apply(combine_feedback, axis=1)
+    grades['auto_feedback_combined'] = grades.apply(combine_feedback, axis=1)
 
 
 
     # grab only the desired columns for the feedback, to write to csv
     # keep the feedback separate from the grades
-    feedback = grades[['name_pre','feedback_combined','student_id']]
-    feedback.columns = ['name', 'feedback_combined','student_id']
+    feedback = grades[['name_pre','auto_feedback_combined','student_id']]
+    feedback.columns = ['name', 'auto_feedback_combined','student_id']
     feedback = feedback.merge(students, left_on = ['student_id'], right_on =['student_id'], how = 'right')
     import csv
     for sec in feedback.section.unique():
         this_sec = feedback[feedback.section==sec].drop(['section'],axis=1)
         sec_name = sec.strip().replace(' ','_')
-        save_feedback(this_sec, f'_autograding/code_feedback_{sec_name}.md')
+        feedback_filename = f'_autograding/code_feedback_{sec_name}.md'
+        save_feedback(this_sec, feedback_filename)
+        print(f'wrote feedback file: {feedback_filename}')
 
 
 
