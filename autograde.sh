@@ -68,6 +68,7 @@ if test -f $dfiles; then
 	while IFS="" read -r p || [ -n "$p" ]
 	do
 		cp "${!COURSE_REPO_LOC}/Lesson_$2/$p" ./
+		echo "    copied " "${!COURSE_REPO_LOC}/Lesson_$2/$p"
 	done < $dfiles
 fi
 
@@ -82,6 +83,14 @@ prechecker=${!COURSE_REPO_LOC}/Lesson_$2/assignment$2_checker.py
 echo "grading using pre-submission checker $prechecker"
 
 cp "$prechecker" ./
+
+
+# copy the solutions file to this folder.  this is because the checker imports the file, and if it's not in the same location, things break.
+solutionsfile=${!COURSE_REPO_LOC}/Lesson_$2/assignment$2_sol.py
+echo "using instructor solution from file $solutionsfile"
+
+cp "$solutionsfile" ./
+
 
 # make a directory into which to store the results of running the tests
 if [ ! -d ./_autograding/pre_checker_results ]; then
@@ -100,7 +109,7 @@ for filename in `find . -type f -name "*.py"`; do
 # for i in $(ls *.py); do
 	# about the 2>, see https://stackoverflow.com/questions/14246119/python-how-can-i-redirect-the-output-of-unittest-obvious-solution-doesnt-wor/22710204
 
-	if [[ "$filename" != *"checker.py" ]]; then
+	if [[ "$filename" != *"checker.py" ]] && [[ "$filename" != *"sol.py" ]]; then
 	  echo "$filename"
 	  if [[ "$filename" != *"assignment$2"*".py" ]]; then
 	  	echo "incorrectly named submission, $filename"
@@ -115,6 +124,7 @@ find ./_autograding/pre_checker_results/ -name "*output.out" -size  0  -delete
 
 mv "./assignment$2_checker.py" ./_autograding
 
+
 set -e
 ################
 # run the post-submission checker for every submitted file
@@ -128,9 +138,9 @@ fi
 
 set +e
 for filename in `find . -type f -name "*.py"`; do
-	if [[ "$filename" != *"checker.py" ]]; then
+	if [[ "$filename" != *"checker.py" ]] && [[ "$filename" != *"sol.py" ]]; then
 	  echo "$filename"
-	  timeout --foreground 30s pytest --junitxml=./_autograding/post_checker_results/"$filename".xml "assignment$2_postsubmission_checker.py" "$filename" 1> ./_autograding/post_checker_results/"$i"_their_output.out
+	  timeout --foreground 30s pytest --junitxml=./_autograding/post_checker_results/"$filename".xml "assignment$2_postsubmission_checker.py" "$filename" 1> ./_autograding/post_checker_results/"$filename"_their_output.out
 	fi
 
 done;
@@ -141,6 +151,8 @@ find ./_autograding/post_checker_results/ -name "*output.out" -size  0  -delete
 set -e
 mv "./assignment$2_postsubmission_checker.py" ./_autograding
 
+
+mv "./assignment$2_sol.py" ./_autograding
 
 
 ####################################
