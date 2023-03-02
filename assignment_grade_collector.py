@@ -47,7 +47,6 @@ def collect(path):
     """
 
 
-
     name = []
     student_id = []
     file_number = []
@@ -116,7 +115,7 @@ def tests_to_feedback(xml, filepath):
     feedback = ''
 
     if xml.failures>0 or xml.errors>0:
-        header = f'In assistive grading, while running {xml.tests} total tests, `pytest` found \n• {xml.failures} test failures (meaning a coded logical check on the values of variables in a checker), and \n• {xml.errors} tests which ran with errors.'
+        header = f'\nIn assistive grading, while running {xml.tests} total tests, `pytest` found \n• {xml.failures} test failures (meaning a coded logical check on the values of variables in a checker), and \n• {xml.errors} tests which ran with errors.'
 
         failure_why = []
         failures = []
@@ -149,7 +148,7 @@ def tests_to_feedback(xml, filepath):
                                 return m
 
                             m = remove_module_thing(format_message(something.message))
-                            why = f'\n\twith message:\n {m}'
+                            why = f'\n\twith message:\n```\n{m}\n```\n'
 
                         failures.append(what+why)
 
@@ -162,16 +161,51 @@ def tests_to_feedback(xml, filepath):
                         error_names.append(case.classname+'.'+case.name)
 
         # prefix each with • , and join with a newline
-        to_str = lambda ell, n: f'The following tests were classified by pytest as `{n}`\n\n'+'\n\n'.join(['• '+f for f in ell]) if ell else ''
+        to_str = lambda ell, n: f'The following tests were classified by pytest as `{n}`\n\n'+'\n\n'.join(['* '+f for f in ell]) if ell else ''
 
         feedback = '\n\n\n'.join([header,to_str(failures,'failure'),to_str(error_names,'error')])
 
     return feedback
 
 
+# see https://stackabuse.com/reading-and-writing-xml-files-in-python-with-pandas/
+# that's where i adapted this from.  
+def feedback_xml(df):
+    """
+    assumes that student name is index???
+    """
 
 
-def combine_feedback(row):
+    from lxml import etree
+    import xml.etree.ElementTree as ET
+
+    feedback_xml = etree.Element('root')  # Create root element.  all xml starts with root.
+
+    for row in df.index:
+
+        student = etree.SubElement(feedback_xml, 'student') # feedback_xml is parent, row is tag name
+
+        for column in df.columns:
+
+
+
+            d = df[column][row]
+
+            data_point = etree.SubElement(student,column) # student is parent, colum
+            data_point.text = str(d)
+
+
+    ET.indent(feedback_xml, space="\t", level=0)
+
+    xml_data = etree.tostring(feedback_xml, encoding='utf-8')  # binary string
+
+
+    with open('feedback.xml', 'w', encoding='utf-8') as f:  # Write in XML file as utf-8
+        f.write(xml_data.decode('utf-8'))
+
+
+
+def deprecated_combine_feedback(row):
     """
     a function to apply, to merge two feedbacks -- from pre and post.
     """
@@ -194,7 +228,7 @@ def combine_feedback(row):
 
 
 
-def format_feedback(row):
+def deprecated_format_feedback(row):
     """
     a function to apply to the data frame, adding some stuff to end of the feedback
     """
@@ -204,7 +238,7 @@ def format_feedback(row):
     return val
 
 
-def save_feedback(feedback, filename):
+def deprecated_save_feedback(feedback, filename):
     """
     saves the feedback data frame to a file named `filename`
     """
@@ -266,7 +300,7 @@ def write_grades_to_csv(grades):
     """
     # grades.set_index('student_id')
 
-    grades.drop(['auto_feedback_pre','auto_feedback_post','auto_feedback_combined','name_pre','name_post','file_number_post','failure_cases_pre','failure_cases_post'],inplace=True,axis=1)
+    grades.drop(['auto_feedback_pre','auto_feedback_post','name_pre','name_post','file_number_post','failure_cases_pre','failure_cases_post'],inplace=True,axis=1)
 
     grades = grades.merge(students, left_on = ['student_id'], right_on =['student_id'], how = 'right')
 
@@ -286,6 +320,29 @@ def write_grades_to_csv(grades):
 
 
 
+def generate_auto_feedback_message(test_suite_result, pre_or_post):
+    assert pre_or_post in ['pre', 'post']
+    import numpy as np
+    from math import isnan
+
+
+
+    if test_suite_result == "nan":
+        return "no submission"
+
+    if test_suite_result == "":
+        return f"Nice work, all tests in the {pre_or_post}-submission suite of unit tests passed!"
+
+    return test_suite_result
+
+
+
+
+
+
+
+
+
 
 ##### begin actual running of code
 
@@ -299,26 +356,51 @@ if __name__=="__main__":
 
     grades = presub.merge(postsub, on=('student_id'), suffixes=['_pre','_post'])
 
-    grades['auto_feedback_combined'] = grades.apply(combine_feedback, axis=1)
+
+
+    grades['auto_feedback_pre'] = grades['auto_feedback_pre'].map(lambda x: generate_auto_feedback_message(x, 'pre'),na_action = None)
+    grades['auto_feedback_post'] = grades['auto_feedback_post'].map(lambda x: generate_auto_feedback_message(x, 'post'),na_action = None)
+
+    grades['autograde_score'] = 50*grades['percent_pass_pre'] + 20*grades['percent_pass_post']  #hardcoded weights here!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 
 
     # grab only the desired columns for the feedback, to write to csv
     # keep the feedback separate from the grades
-    feedback = grades[['name_pre','auto_feedback_combined','student_id']]
-    feedback.columns = ['name', 'auto_feedback_combined','student_id']
+    feedback = grades[['name_pre','auto_feedback_pre','auto_feedback_post','autograde_score','student_id']]
+
+    
+    feedback.columns = ['name', 'auto_feedback_pre', 'auto_feedback_post','raw_assistive_grading_score','student_id']
     feedback = feedback.merge(students, left_on = ['student_id'], right_on =['student_id'], how = 'right')
+    
+
+    feedback = feedback.copy()
+
+
+    feedback['auto_feedback_pre'].fillna('no submission, no pre-submission unit tests executed',inplace=True)
+    feedback['auto_feedback_post'].fillna('no submission, no post-submission unit tests executed',inplace=True)
+
+
+
+    feedback['manual_feedback'] = "Instructor's manual feedback:\n\n\n"
+
+    feedback['name'].fillna(feedback['canvas_name'].map(lambda s: ''.join([c for c in s if c.isalpha()]).lower()), inplace=True)
+
     import csv
     for sec in feedback.section.unique():
         this_sec = feedback[feedback.section==sec].drop(['section'],axis=1)
         sec_name = sec.strip().replace(' ','_')
-        feedback_filename = f'_autograding/code_feedback_{sec_name}.md'
-        save_feedback(this_sec, feedback_filename)
-        print(f'wrote feedback file: {feedback_filename}')
+        # feedback_filename = f'_autograding/code_feedback_{sec_name}.md'
+        # save_feedback(this_sec, feedback_filename)
+        # print(f'wrote feedback file: {feedback_filename}')
+
+
+        print(f'writing xml file')
+        feedback_xml(feedback)
 
 
 
-    grades['autograde_score'] = 50*grades['percent_pass_pre'] + 20*grades['percent_pass_post']  #hardcoded weights here!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
     grades['manual_score'] = pd.NA  # make space for these in the sheet
     grades['reflection_score'] = pd.NA  # make space for these in the sheet
     grades['total_score'] = pd.NA  # make space for these in the sheet
