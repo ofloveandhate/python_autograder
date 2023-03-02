@@ -121,3 +121,61 @@ def deprecated_collect_num_passes_txt_format(path):
     df['num_tests'] = df['success_string'].map(lambda x: len(x))
     df['percent_pass'] = df['num_passes']/df['num_tests']
     return df
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+def deprecated_combine_feedback(row):
+    """
+    a function to apply, to merge two feedbacks -- from pre and post.
+    """
+
+    if row['percent_pass_pre']==1 and row['percent_pass_post']==1:
+        return "\nNice work, all automatically run tests passed!\n\n# Manual grading comments:\n\n"
+
+    feedback = '# Manual grading comments:\n\n\n\n'
+    feedback = feedback + '# Automatically generated feedback on your last submitted code'
+    if row['percent_pass_pre']<1:
+        feedback = feedback + '\n\n## While grading, we detected that the following issues from the provided assignment checker file:\n\n'
+        feedback = feedback + row['auto_feedback_pre']
+
+    if row['percent_pass_post']<1:
+        feedback = feedback + '\n\n## While grading, we detected that the following issues from an instructor-only checker file:\n\n'
+        feedback = feedback + row['auto_feedback_post']
+
+    # put line of code indicating autograder raw score here
+    return feedback
+
+
+
+def deprecated_format_feedback(row):
+    """
+    a function to apply to the data frame, adding some stuff to end of the feedback
+    """
+    val = '\n{}\n\n{}\n'.format(row['sortable_name'],row['auto_feedback_combined'])
+    val = val + '\nEnd of code feedback for {}.\n\n'.format(row['sortable_name'])
+    val = val + '\n**********************\nNext student\n===================\n'
+    return val
+
+
+def deprecated_save_feedback(feedback, filename):
+    """
+    saves the feedback data frame to a file named `filename`
+    """
+
+    with open(filename,'w') as file:  # i'm not sure this needs to be here.  can remove?
+        formatted = feedback.apply(format_feedback,axis=1)
+        formatted.to_csv(filename,index=False,header=False)
+
+        

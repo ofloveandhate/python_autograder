@@ -112,11 +112,15 @@ def tests_to_feedback(xml, filepath):
     returns a string.
     '''
 
+
+    # breakpoint()
+
     feedback = ''
 
-    if xml.failures>0 or xml.errors>0:
-        header = f'\nIn assistive grading, while running {xml.tests} total tests, `pytest` found \n• {xml.failures} test failures (meaning a coded logical check on the values of variables in a checker), and \n• {xml.errors} tests which ran with errors.'
+    header = f'\n# Auto-generated code feedback\n\nProcessed during assistive grading, from    \n`{xml.filepath}`'
 
+    if xml.failures>0 or xml.errors>0:
+        header += f'While running {xml.tests} total tests, `pytest` found:\n\n* {xml.failures} test failures (meaning a coded logical check on the values of variables in a checker), and \n* {xml.errors} tests failed due to errors.'
         failure_why = []
         failures = []
         for suite in xml:
@@ -126,7 +130,7 @@ def tests_to_feedback(xml, filepath):
                         what,why = '',''
 
 
-                        what = case.classname+'.'+case.name
+                        what = f'`{case.classname}.{case.name}`'
                         
                         if 'has no attribute' in something.message:
                             m = something.message
@@ -150,7 +154,7 @@ def tests_to_feedback(xml, filepath):
                             m = remove_module_thing(format_message(something.message))
                             why = f'\n\twith message:\n```\n{m}\n```\n'
 
-                        failures.append(what+why)
+                        failures.append(f'{what}\n{why}')
 
 
         error_names = []
@@ -160,10 +164,15 @@ def tests_to_feedback(xml, filepath):
                     if isinstance(something,junitparser.junitparser.Error):
                         error_names.append(case.classname+'.'+case.name)
 
-        # prefix each with • , and join with a newline
+        # prefix each with `* `, and join with a newline
         to_str = lambda ell, n: f'The following tests were classified by pytest as `{n}`\n\n'+'\n\n'.join(['* '+f for f in ell]) if ell else ''
 
         feedback = '\n\n\n'.join([header,to_str(failures,'failure'),to_str(error_names,'error')])
+
+
+    else: # no errors or failures!!! i think all tests passed.
+
+        feedback = '\n\n\n'.join([header,"Nice work, all tests in this suite of unit tests passed!"])
 
     return feedback
 
@@ -183,7 +192,7 @@ def feedback_xml(df):
 
     for row in df.index:
 
-        student = etree.SubElement(feedback_xml, 'student') # feedback_xml is parent, row is tag name
+        student = etree.SubElement(feedback_xml, f'student{row}') # feedback_xml is parent, row is tag name
 
         for column in df.columns:
 
@@ -200,52 +209,12 @@ def feedback_xml(df):
     xml_data = etree.tostring(feedback_xml, encoding='utf-8')  # binary string
 
 
-    with open('feedback.xml', 'w', encoding='utf-8') as f:  # Write in XML file as utf-8
+    with open('_autograding/feedback.xml', 'w', encoding='utf-8') as f:  # Write in XML file as utf-8
         f.write(xml_data.decode('utf-8'))
 
 
 
-def deprecated_combine_feedback(row):
-    """
-    a function to apply, to merge two feedbacks -- from pre and post.
-    """
 
-    if row['percent_pass_pre']==1 and row['percent_pass_post']==1:
-        return "\nNice work, all automatically run tests passed!\n\n# Manual grading comments:\n\n"
-
-    feedback = '# Manual grading comments:\n\n\n\n'
-    feedback = feedback + '# Automatically generated feedback on your last submitted code'
-    if row['percent_pass_pre']<1:
-        feedback = feedback + '\n\n## While grading, we detected that the following issues from the provided assignment checker file:\n\n'
-        feedback = feedback + row['auto_feedback_pre']
-
-    if row['percent_pass_post']<1:
-        feedback = feedback + '\n\n## While grading, we detected that the following issues from an instructor-only checker file:\n\n'
-        feedback = feedback + row['auto_feedback_post']
-
-    # put line of code indicating autograder raw score here
-    return feedback
-
-
-
-def deprecated_format_feedback(row):
-    """
-    a function to apply to the data frame, adding some stuff to end of the feedback
-    """
-    val = '\n{}\n\n{}\n'.format(row['canvas_name'],row['auto_feedback_combined'])
-    val = val + '\nEnd of code feedback for {}.\n\n'.format(row['canvas_name'])
-    val = val + '\n**********************\nNext student\n===================\n'
-    return val
-
-
-def deprecated_save_feedback(feedback, filename):
-    """
-    saves the feedback data frame to a file named `filename`
-    """
-
-    with open(filename,'w') as file:  # i'm not sure this needs to be here.  can remove?
-        formatted = feedback.apply(format_feedback,axis=1)
-        formatted.to_csv(filename,index=False,header=False)
 
 
 def reformat_grades_csv(fname):
@@ -304,7 +273,7 @@ def write_grades_to_csv(grades):
 
     grades = grades.merge(students, left_on = ['student_id'], right_on =['student_id'], how = 'right')
 
-    grades.sort_values(by=['section','canvas_name'], inplace=True)
+    grades.sort_values(by=['section','sortable_name'], inplace=True)
 
     # round, because all those decimal places were not helpful at all.
     grades[['percent_pass_post','percent_pass_pre','autograde_score']] = grades[['percent_pass_post','percent_pass_pre','autograde_score']].round(4)
@@ -326,12 +295,8 @@ def generate_auto_feedback_message(test_suite_result, pre_or_post):
     from math import isnan
 
 
-
     if test_suite_result == "nan":
         return "no submission"
-
-    if test_suite_result == "":
-        return f"Nice work, all tests in the {pre_or_post}-submission suite of unit tests passed!"
 
     return test_suite_result
 
@@ -367,24 +332,27 @@ if __name__=="__main__":
 
     # grab only the desired columns for the feedback, to write to csv
     # keep the feedback separate from the grades
-    feedback = grades[['name_pre','auto_feedback_pre','auto_feedback_post','autograde_score','student_id']]
+    feedback = grades[['name_pre','percent_pass_pre','percent_pass_post','auto_feedback_pre','auto_feedback_post','autograde_score','student_id']]
 
     
-    feedback.columns = ['name', 'auto_feedback_pre', 'auto_feedback_post','raw_assistive_grading_score','student_id']
+    feedback.columns = ['name', 'percent_pass_pre','percent_pass_post', 'auto_feedback_pre', 'auto_feedback_post','raw_assistive_grading_score','student_id']
     feedback = feedback.merge(students, left_on = ['student_id'], right_on =['student_id'], how = 'right')
     
-
-    feedback = feedback.copy()
+    feedback = feedback.copy()  # stupid warnings cause so much headache.  silence!
 
 
     feedback['auto_feedback_pre'].fillna('no submission, no pre-submission unit tests executed',inplace=True)
     feedback['auto_feedback_post'].fillna('no submission, no post-submission unit tests executed',inplace=True)
+    
+    
+
+    feedback['name'].fillna(feedback['sortable_name'].map(lambda s: ''.join([c for c in s if c.isalpha()]).lower()), inplace=True)
+
+    feedback['manual_feedback'] = feedback['sortable_name'].map(lambda s: f"\n\nInstructor's manually written feedback for {s}:\n\n\n\n\n\n")
+    feedback['xml_spacer'] = feedback['sortable_name'].map(lambda s: f'\n\n------------\nEnd feedback for {s}\n---------------\n\n')
 
 
 
-    feedback['manual_feedback'] = "Instructor's manual feedback:\n\n\n"
-
-    feedback['name'].fillna(feedback['canvas_name'].map(lambda s: ''.join([c for c in s if c.isalpha()]).lower()), inplace=True)
 
     import csv
     for sec in feedback.section.unique():
@@ -395,8 +363,8 @@ if __name__=="__main__":
         # print(f'wrote feedback file: {feedback_filename}')
 
 
-        print(f'writing xml file')
-        feedback_xml(feedback)
+    print(f'writing xml file')
+    feedback_xml(feedback)
 
 
 
