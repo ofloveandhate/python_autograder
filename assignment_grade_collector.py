@@ -99,7 +99,7 @@ def collect(path):
             auto_feedback.append(tests_to_feedback(xml, join(dirname,pyname)))
 
 
-    df = pd.DataFrame({'name':name, "student_id":student_id,"file_number":file_number, 
+    df = pd.DataFrame({'name_from_submitted_file':name, "student_id":student_id,"file_number":file_number, 
                        'auto_feedback':auto_feedback, "num_passes":num_passes, "num_fails":num_fails, "num_errors":num_errors, 'num_tests':num_tests, 'failure_cases':failure_cases})
     df['percent_pass'] = df['num_passes']/df['num_tests']
 
@@ -172,14 +172,14 @@ def tests_to_feedback(xml, filepath):
 
     else: # no errors or failures!!! i think all tests passed.
 
-        feedback = '\n\n\n'.join([header,"Nice work, all tests in this suite of unit tests passed!"])
+        feedback = '\n\n\n'.join([header,"Nice work, all tests in this suite of unit tests passed!\n"])
 
     return feedback
 
 
 # see https://stackabuse.com/reading-and-writing-xml-files-in-python-with-pandas/
 # that's where i adapted this from.  
-def feedback_xml(df):
+def feedback_xml(df,filename):
     """
     assumes that student name is index???
     """
@@ -189,6 +189,9 @@ def feedback_xml(df):
     import xml.etree.ElementTree as ET
 
     feedback_xml = etree.Element('root')  # Create root element.  all xml starts with root.
+
+    instructions = etree.SubElement(feedback_xml, f'InstructionsForInstructor') 
+    instructions.text = "todo.  write instructions here."
 
     for row in df.index:
 
@@ -269,14 +272,14 @@ def write_grades_to_csv(grades):
     """
     # grades.set_index('student_id')
 
-    grades.drop(['auto_feedback_pre','auto_feedback_post','name_pre','name_post','file_number_post','failure_cases_pre','failure_cases_post'],inplace=True,axis=1)
+    grades.drop(['auto_feedback_pre','auto_feedback_post','name_from_submitted_file','file_number_post','failure_cases_pre','failure_cases_post'],inplace=True,axis=1)
 
     grades = grades.merge(students, left_on = ['student_id'], right_on =['student_id'], how = 'right')
 
     grades.sort_values(by=['section','sortable_name'], inplace=True)
 
     # round, because all those decimal places were not helpful at all.
-    grades[['percent_pass_post','percent_pass_pre','autograde_score']] = grades[['percent_pass_post','percent_pass_pre','autograde_score']].round(4)
+    grades[['percent_pass_post','percent_pass_pre','total_assistive_grading_score','score_from_presubmission_checker','score_from_postubmission_checker']] = grades[['percent_pass_post','percent_pass_pre','total_assistive_grading_score','score_from_presubmission_checker','score_from_postsubmission_checker']].round(3)
 
     fname = '_autograding/checker_results.csv'
     grades.to_csv(fname)
@@ -302,10 +305,74 @@ def generate_auto_feedback_message(test_suite_result, pre_or_post):
 
 
 
+def process_feedback_and_grades(feedback_and_grades):
+    feedback_and_grades = feedback_and_grades.copy()  # stupid warnings cause so much headache.  silence!
+
+
+    feedback_and_grades['auto_feedback_pre'].fillna('no submission, no pre-submission unit tests executed',inplace=True)
+    feedback_and_grades['auto_feedback_post'].fillna('no submission, no post-submission unit tests executed',inplace=True)
+    
+    
+    # print(feedback_and_grades.columns)
+    # feedback_and_grades['name'].fillna(feedback_and_grades['sortable_name'].map(lambda s: ''.join([c for c in s if c.isalpha()]).lower()), inplace=True)
+
+    # feedback_and_grades = feedback_and_grades[['name', 'percent_pass_pre','percent_pass_post', 'auto_feedback_pre', 'auto_feedback_post','total_assistive_grading_score','student_id']]
+    # reorder the columns to keep grades together. 
+    
+
+    def default_feedback_message(row):
+        if row['auto_feedback_pre'].startswith('no submission'):
+            return 'no submission'
+
+        else:
+            n = row['sortable_name']
+            return f"\n\nInstructor's manually written feedback for {n}:\n\n\n## Code\n\n*\n\n## Reflection\n\nThank you for your thoughtful reflection.\n\n---\n\n\n"
+
+
+    feedback_and_grades['manual_feedback'] = feedback_and_grades.apply(default_feedback_message, axis=1) # TODO this should be read from a course meta
+
+    
+    feedback_and_grades['xml_spacer_end'] = feedback_and_grades['sortable_name'].map(lambda s: f'\n\n------------\nEnd feedback_and_grades for {s}\n---------------\n\n')
+    feedback_and_grades['xml_spacer_begin'] = feedback_and_grades['sortable_name'].map(lambda s: f'\n\n------------\nBegin feedback_and_grades for {s}\n---------------\n\n')
+
+    new_column_order = [feedback_and_grades.columns[-1]]
+    new_column_order.extend(feedback_and_grades.columns[:-1])
+
+    feedback_and_grades = feedback_and_grades[new_column_order]
+
+    xml_feedback_filename = join('_autograding','feedback.xml')
+    print(f'writing xml file {xml_feedback_filename}')
+    feedback_xml(feedback_and_grades, filename=xml_feedback_filename)
 
 
 
+def additional_processing_grades(grades):
+    
 
+
+
+    grades['auto_feedback_pre'] = grades['auto_feedback_pre'].map(lambda x: generate_auto_feedback_message(x, 'pre'),na_action = None)
+    grades['auto_feedback_post'] = grades['auto_feedback_post'].map(lambda x: generate_auto_feedback_message(x, 'post'),na_action = None)
+
+
+    # TODO hardcoded weights here!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    grades['score_from_presubmission_checker'] = 50*grades['percent_pass_pre']
+    grades['score_from_postsubmission_checker'] = 20*grades['percent_pass_post'] 
+    
+    # combine
+    grades['total_assistive_grading_score'] =  (grades['score_from_presubmission_checker'] +  grades['score_from_postsubmission_checker']).round(3)
+
+    grades['score_instructor_discretion'] = '   '  # make space for these in the sheet
+    grades['score_reflection'] = '   '  # make space for these in the sheet
+    grades['score_given'] = '   '  # make space for these in the sheet
+
+
+    # change some names of columns
+    grades.rename(columns={"name_from_submitted_file_pre": "name_from_submitted_file"},inplace=True)
+
+    grades.drop(["name_from_submitted_file_post"],inplace=True,axis=1)
+
+    return grades
 
 
 
@@ -318,61 +385,28 @@ if __name__=="__main__":
     presub = collect('_autograding/pre_checker_results')
     postsub = collect('_autograding/post_checker_results')
 
-
     grades = presub.merge(postsub, on=('student_id'), suffixes=['_pre','_post'])
 
+    additional_processing_grades(grades)
 
+    feedback_and_grades = grades.copy()
 
-    grades['auto_feedback_pre'] = grades['auto_feedback_pre'].map(lambda x: generate_auto_feedback_message(x, 'pre'),na_action = None)
-    grades['auto_feedback_post'] = grades['auto_feedback_post'].map(lambda x: generate_auto_feedback_message(x, 'post'),na_action = None)
-
-    grades['autograde_score'] = 50*grades['percent_pass_pre'] + 20*grades['percent_pass_post']  #hardcoded weights here!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-
-
-    # grab only the desired columns for the feedback, to write to csv
-    # keep the feedback separate from the grades
-    feedback = grades[['name_pre','percent_pass_pre','percent_pass_post','auto_feedback_pre','auto_feedback_post','autograde_score','student_id']]
-
-    
-    feedback.columns = ['name', 'percent_pass_pre','percent_pass_post', 'auto_feedback_pre', 'auto_feedback_post','raw_assistive_grading_score','student_id']
-    feedback = feedback.merge(students, left_on = ['student_id'], right_on =['student_id'], how = 'right')
-    
-    feedback = feedback.copy()  # stupid warnings cause so much headache.  silence!
-
-
-    feedback['auto_feedback_pre'].fillna('no submission, no pre-submission unit tests executed',inplace=True)
-    feedback['auto_feedback_post'].fillna('no submission, no post-submission unit tests executed',inplace=True)
-    
+    # after this line \/ \/, we'll have empty rows for students who didn't submit.
+    feedback_and_grades = feedback_and_grades.merge(students, left_on = ['student_id'], right_on =['student_id'], how = 'right') 
     
 
-    feedback['name'].fillna(feedback['sortable_name'].map(lambda s: ''.join([c for c in s if c.isalpha()]).lower()), inplace=True)
 
-    feedback['manual_feedback'] = feedback['sortable_name'].map(lambda s: f"\n\nInstructor's manually written feedback for {s}:\n\n\n\n\n\n")
-    feedback['xml_spacer'] = feedback['sortable_name'].map(lambda s: f'\n\n------------\nEnd feedback for {s}\n---------------\n\n')
-
-
-
-
-    import csv
-    for sec in feedback.section.unique():
-        this_sec = feedback[feedback.section==sec].drop(['section'],axis=1)
-        sec_name = sec.strip().replace(' ','_')
-        # feedback_filename = f'_autograding/code_feedback_{sec_name}.md'
-        # save_feedback(this_sec, feedback_filename)
-        # print(f'wrote feedback file: {feedback_filename}')
-
-
-    print(f'writing xml file')
-    feedback_xml(feedback)
+    # import csv
+    # for sec in feedback_and_grades.section.unique():
+    #     this_sec = feedback_and_grades[feedback_and_grades.section==sec].drop(['section'],axis=1)
+    #     sec_name = sec.strip().replace(' ','_')
+    #     # feedback_filename = f'_autograding/code_feedback_{sec_name}.md'
+    #     # save_feedback(this_sec, feedback_filename)
+    #     # print(f'wrote feedback_and_grades file: {feedback_filename}')
 
 
 
-
-    grades['manual_score'] = pd.NA  # make space for these in the sheet
-    grades['reflection_score'] = pd.NA  # make space for these in the sheet
-    grades['total_score'] = pd.NA  # make space for these in the sheet
-
+    process_feedback_and_grades(feedback_and_grades)
 
     write_grades_to_csv(grades)
 
