@@ -7,7 +7,7 @@ from os.path import join
 # inspired by
 #https://stackabuse.com/reading-and-writing-xml-files-in-python-with-pandas/
 
-repo_variable_name = "DS150_REPO_LOC"
+repo_variable_name = "DS710_REPO_LOC"
 
 
 def get_key():
@@ -79,9 +79,19 @@ def get_matching_assignment(course, assignment_number):
 
     matching = []
 
+
+    def match_fn_150(n,assignment_number):
+        short_name = n.split(' --- ')[0]
+        return short_name == f'🏠 Assignment {assignment_number}'
+
+    def match_fn_710(n,assignment_number):
+        return n == f'Lesson {assignment_number} Assignment'
+
+    match_fn = match_fn_710
+
     for assignment in assignments:
-        short_name = assignment.name.split(' --- ')[0]
-        if short_name == f'🏠 Assignment {assignment_number}':
+        
+        if match_fn(assignment.name, assignment_number):
             matching.append(assignment)
 
     if len(matching) == 0:
@@ -284,7 +294,7 @@ def upload_score(data_this_student, submission, assignment, dry_run):
 
 if __name__=="__main__":
 
-    assignment_number = 2 # should be argv in...
+    assignment_number = '4b' # should be argv in...
 
     students = read_data()
 
