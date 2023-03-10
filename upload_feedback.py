@@ -27,6 +27,9 @@ def get_repo_name_and_assignment_number():
 
 
 def get_dry_run():
+    """
+    reads dry run indicator from argv
+    """
     try:
         return bool(sys.argv[3])
     except:
@@ -62,7 +65,7 @@ def make_canvas():
 def get_current_course_ids(repo_variable_name):
     repo_loc = os.environ.get(repo_variable_name)
     if repo_loc is None:
-        print(f'`get_current_students.py` needs an environment variable `{repo_variable_name}`, containing the full path of git repo for DS710')
+        print(f'`upload_feedback.py` needs an environment variable `{repo_variable_name}`, containing the full path of git repo for DS710')
         sys.exit()
 
     import json
