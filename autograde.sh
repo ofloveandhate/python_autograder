@@ -158,6 +158,7 @@ mv "./assignment$2_sol.py" ./_autograding
 ####################################
 # get the current student list, so that students who didn't submit can get 0's
 echo 'getting current student list from Canvas, automatically'
+echo "python "${SCRIPT_DIR}"/get_current_students.py $COURSE_REPO_LOC"
 python "${SCRIPT_DIR}"/get_current_students.py $COURSE_REPO_LOC
 
 
