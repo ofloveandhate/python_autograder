@@ -36,6 +36,21 @@ def process_filename(filename):
 
 
 
+def get_course_autograding_specs(repo_variable_name):
+    repo_loc = os.environ.get(repo_variable_name)
+    if repo_loc is None:
+        print(f'`assignment_grade_collector.py` needs an environment variable `{repo_variable_name}`, containing the full path of git repo for the course youre autograding')
+        sys.exit()
+
+    import json
+    with open(os.path.join(repo_loc, '_course_metadata/autograding.json')) as file:
+        return json.loads(file.read())
+
+
+
+
+
+
 
 
 
@@ -279,7 +294,7 @@ def write_grades_to_csv(grades):
     grades.sort_values(by=['section','sortable_name'], inplace=True)
 
     # round, because all those decimal places were not helpful at all.
-    grades[['percent_pass_post','percent_pass_pre','total_assistive_grading_score','score_from_presubmission_checker','score_from_postubmission_checker']] = grades[['percent_pass_post','percent_pass_pre','total_assistive_grading_score','score_from_presubmission_checker','score_from_postsubmission_checker']].round(3)
+    grades[['percent_pass_post','percent_pass_pre','score_total_assistive_grading','score_from_presubmission_checker','score_from_postubmission_checker']] = grades[['percent_pass_post','percent_pass_pre','score_total_assistive_grading','score_from_presubmission_checker','score_from_postsubmission_checker']].round(3)
 
     fname = '_autograding/checker_results.csv'
     grades.to_csv(fname)
@@ -346,7 +361,7 @@ def process_feedback_and_grades(feedback_and_grades):
 
 
 
-def additional_processing_grades(grades):
+def additional_processing_grades(grades, autograding_specs):
 
 
 
@@ -355,14 +370,21 @@ def additional_processing_grades(grades):
     grades['auto_feedback_post'] = grades['auto_feedback_post'].map(lambda x: generate_auto_feedback_message(x, 'post'),na_action = None)
 
 
-    # TODO hardcoded weights here!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    grades['score_from_presubmission_checker'] = 45*grades['percent_pass_pre']
-    grades['score_from_postsubmission_checker'] = 45*grades['percent_pass_post']
+    weight_pre = float(autograding_specs['unit_test_weight_pre'])
+    weight_post = float(autograding_specs['unit_test_weight_post'])
+
+
+
+    grades['score_from_presubmission_checker'] = weight_pre*grades['percent_pass_pre']
+    grades['score_from_postsubmission_checker'] = weight_post*grades['percent_pass_post']
 
     # combine
-    grades['total_assistive_grading_score'] =  (grades['score_from_presubmission_checker'] +  grades['score_from_postsubmission_checker']).round(3)
+    grades['score_total_assistive_grading'] =  (grades['score_from_presubmission_checker'] +  grades['score_from_postsubmission_checker']).round(3)
 
-    #grades['score_instructor_discretion'] = '   '  # make space for these in the sheet
+    for cat in autograding_specs['extra_categories']:
+        grades[cat] = '   '  # make space for these in the sheet
+
+
     grades['score_reflection'] = '   '  # make space for these in the sheet
     grades['score_given'] = '   '  # make space for these in the sheet
 
@@ -379,15 +401,19 @@ def additional_processing_grades(grades):
 ##### begin actual running of code
 
 if __name__=="__main__":
+
+    repo_variable_name = "DS150_REPO_LOC"
+
     students = get_students()
 
+    autograding_specs = get_course_autograding_specs(repo_variable_name)
 
     presub = collect('_autograding/pre_checker_results')
     postsub = collect('_autograding/post_checker_results')
 
     grades = presub.merge(postsub, on=('student_id'), suffixes=['_pre','_post'])
 
-    additional_processing_grades(grades)
+    additional_processing_grades(grades, autograding_specs)
 
     feedback_and_grades = grades.copy()
 
