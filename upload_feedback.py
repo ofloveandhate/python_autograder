@@ -118,7 +118,7 @@ def get_matching_assignment(course, assignment_number):
     match_fn = match_fn_710
 
     for assignment in assignments:
-        
+
         if match_fn(assignment.name, assignment_number):
             matching.append(assignment)
 
@@ -199,7 +199,7 @@ def upload(autograding_data, assignment_number, repo_variable_name, dry_run = Tr
     if len(course_ids) != 1:
         raise RuntimeError(f'too many courses match: {course_ids}')
 
-    course = canvas.get_course(course_ids[0]) 
+    course = canvas.get_course(course_ids[0])
 
     assignment = get_matching_assignment(course, assignment_number)
 
@@ -222,7 +222,7 @@ def upload(autograding_data, assignment_number, repo_variable_name, dry_run = Tr
             # else:
             #     n = data_this_student['sortable_name']
             #     print(f'no submission from data_this_student {n}, giving stock feedback:\n{q}')
-            
+
 
 
         # get their submission.  only do this if they actually submitted.  will get something either way!!!
@@ -255,7 +255,7 @@ def upload_pytest_feedback(data_this_student, submission, assignment, dry_run):
     if p<1:
         feedback_name = join('_autograding','presubmission_checker_auto_feedback.pdf')
         feedback_to_pdf(data_this_student['auto_feedback_pre'], feedback_name)
-        
+
         if not dry_run:
             submission.upload_comment(feedback_name)
         else:
@@ -275,7 +275,7 @@ def upload_pytest_feedback(data_this_student, submission, assignment, dry_run):
     if p<1:
         feedback_name = join('_autograding','postsubmission_checker_auto_feedback.pdf')
         feedback_to_pdf(data_this_student['auto_feedback_post'], feedback_name)
-        
+
         if not dry_run:
             submission.upload_comment(feedback_name)
         else:
@@ -305,11 +305,12 @@ def upload_score(data_this_student, submission, assignment, dry_run):
 
     report += get_and_format_as_float('score_from_presubmission_checker')
     report += get_and_format_as_float('score_from_postsubmission_checker')
-    report += get_and_format_as_float('score_instructor_discretion')
+    #report += get_and_format_as_float('score_instructor_discretion')
     report += get_and_format_as_float('score_reflection')
     report += '\nSum: ' + get_and_format_as_float('score_given')
 
-    total_grade = data_this_student['score_given'].strip()
+    total_grade = data_this_student['score_given'].strip()ssignment_number = get_repo_name_and_assignment_number()
+    dry_run = get_dry_run()
 
     if not total_grade:
         print(f"⚠️ Warning!  Unset score_given for {data_this_student['sortable_name']}.  This field is expected to be set by you in feedback.xml prior to uploading.  ")
@@ -338,5 +339,3 @@ if __name__=="__main__":
 
 
     upload(students, assignment_number, repo_variable_name, dry_run = dry_run)
-
-
