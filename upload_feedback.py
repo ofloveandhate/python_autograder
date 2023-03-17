@@ -3,6 +3,7 @@ from lxml import objectify
 import canvasapi
 import os
 from os.path import join
+import sys
 
 # inspired by
 #https://stackabuse.com/reading-and-writing-xml-files-in-python-with-pandas/
@@ -19,7 +20,7 @@ def get_repo_name_and_assignment_number():
         raise RuntimeError(f'script `upload_feedback` is intended to be called with the name of an environment variable after the script name.  add it.  for example, `python upload_feedback DS150_REPO_LOC 4b`')
 
     try:
-        assignment_number = int(sys.argv[2])
+        assignment_number = sys.argv[2]
     except:
         raise RuntimeError(f'script `upload_feedback` is intended to be called with an assignment number after the script name.  add it.  for example, `python upload_feedback DS150_REPO_LOC 4b`')
 
@@ -31,9 +32,9 @@ def get_dry_run():
     reads dry run indicator from argv
     """
     try:
-        return bool(sys.argv[3])
+        return bool(int(sys.argv[3]))
     except:
-        print(f'no dry_run value used.  doing dry run.  if don\'t want dry run, put `False` or `0` as 3th argument when calling this script')
+        print(f'no dry_run value used.  doing dry run.  if don\'t want dry run, put `0` as 3th argument when calling this script')
         return True
 
 
@@ -102,24 +103,24 @@ def read_data():
     return autograding_data
 
 
-def get_matching_assignment(course, assignment_number):
+def get_matching_assignment(course, assignment_number, format_string):
     assignments = course.get_assignments()
 
     matching = []
 
+    is_match = lambda test_name, assignment_number: n.startswith(format_string.format(assignment_number))
 
     def match_fn_150(n,assignment_number):
         short_name = n.split(' --- ')[0]
-        return short_name == f'🏠 Assignment {assignment_number}'
+        return short_name == f''
 
     def match_fn_710(n,assignment_number):
-        return n == f'Lesson {assignment_number} Assignment'
+        return n == 
 
-    match_fn = match_fn_710
 
     for assignment in assignments:
         
-        if match_fn(assignment.name, assignment_number):
+        if is_match(assignment.name, assignment_number):
             matching.append(assignment)
 
     if len(matching) == 0:
@@ -330,11 +331,8 @@ if __name__=="__main__":
     repo_variable_name, assignment_number = get_repo_name_and_assignment_number()
     dry_run = get_dry_run()
 
-
     students = read_data()
 
-    if not dry_run:
-        raise('ariosen')
 
 
     upload(students, assignment_number, repo_variable_name, dry_run = dry_run)
