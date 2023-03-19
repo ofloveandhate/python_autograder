@@ -402,7 +402,13 @@ def additional_processing_grades(grades, autograding_specs):
 
 if __name__=="__main__":
 
-    repo_variable_name = "DS150_REPO_LOC"
+    try:
+        import sys
+        repo_variable_name = sys.argv[1]
+    except:
+        raise RuntimeError(f'script `assignment_grade_collector` is intended to be called with the name of an environment variable after the script name.  add it.  for example, `python assignment_grade_collector DS150_REPO_LOC`')
+
+
 
     students = get_students()
 
