@@ -192,7 +192,27 @@ def get_format_string(repo_variable_name):
     return autograding_meta["assignment_naming_convention"]["format_spec"]
 
 
+
+
+
+
+def report_missing_totals(autograding_data):
+    missing_scores = []
+    for data_this_student in autograding_data:
+        if not data_this_student['auto_feedback_pre'].startswith('no submission'):
+            if not data_this_student['score_given'].strip():
+                missing_scores.append(data_this_student['sortable_name'])
+
+    if missing_scores:
+        raise RuntimeError('you are missing scores for the following students:\n{}\n'.format('; '.join(missing_scores)))
+
+
+
 def upload(autograding_data, assignment_number, repo_variable_name, dry_run = True):
+
+
+    report_missing_totals(autograding_data)
+
 
     canvas = make_canvas()
 
