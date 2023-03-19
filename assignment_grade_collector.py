@@ -428,14 +428,6 @@ if __name__=="__main__":
 
 
 
-    # import csv
-    # for sec in feedback_and_grades.section.unique():
-    #     this_sec = feedback_and_grades[feedback_and_grades.section==sec].drop(['section'],axis=1)
-    #     sec_name = sec.strip().replace(' ','_')
-    #     # feedback_filename = f'_autograding/code_feedback_{sec_name}.md'
-    #     # save_feedback(this_sec, feedback_filename)
-    #     # print(f'wrote feedback_and_grades file: {feedback_filename}')
-
 
 
     process_feedback_and_grades(feedback_and_grades)
