@@ -18,40 +18,35 @@ def parse_argv():
 
     parser=argparse.ArgumentParser()
 
-    parser.add_argument("--repo_variable_name", help="the name of an environment variable containing the path to the repo / folder for the course.  this folder must contain a file at path `${$REPO_VARIABLE_NAME}/_course_metadata/canvas_course_ids.json`")
-    parser.add_argument("--assignment", help="the number of the assignment to get.  for example, `6a`")
-    parser.add_argument("--extension", help="the extension of the attachments to get.  for example, `pdf`.  by default, this is `*`, for everything.")
-    parser.add_argument("--dest", help="the destination folder for where to save the attachments.  by default, this is `./downloaded_attachments`.")
-    parser.add_argument("--dry_run", help="set whether to make this a dry run.  By default it's not a dry run.  Valid options are anything Python can interpret as a bool")
-    parser.add_argument("--ignore_test_student", help="set whether to ignore the test student.  By default we do ignore.  Valid options are anything Python can interpret as a bool")
+    parser.add_argument("--repo_variable_name","-r",
+                        help="the name of an environment variable containing the path to the repo / folder for the course.  this folder must contain a file at path `${$REPO_VARIABLE_NAME}/_course_metadata/canvas_course_ids.json`.  this argument must be specified",
+                        required=True)
+
+    parser.add_argument("--assignment", '-a',
+                        help="the number of the assignment to get.  for example, `6a`.  this argument must be specified",
+                        required=True)
+
+    parser.add_argument("--extension", '--ext',
+                        help="the extension of the attachments to get.  for example, `pdf`.  by default, this is `*`, for everything.",
+                        default='*')
+
+    parser.add_argument("--dest", '--destination',
+                        help="the destination folder for where to save the attachments.  by default, this is `./downloaded_attachments`.",
+                        default="./downloaded_attachments")
+    parser.add_argument("--dry_run", 
+                        help="set whether to make this a dry run.  By default it's NOT a dry run.  Valid options are anything Python can interpret as a bool",
+                        default=False, type=bool)
+
+
+    parser.add_argument("--ignore_test_student", 
+                        help="set whether to ignore the test student.  By default we do ignore.  Valid options are anything Python can interpret as a bool",
+                        default=True, type=bool)
+
+
     args = parser.parse_args()
 
-    # print(f"Args: {args}")
-    # print(f"Dict format: {vars(args)}")
-
-    if args.assignment is None:
-        raise RuntimeError(f'script `download_ungraded_attachments.py` requires an argument `--repo_variable_name` with value the name of an environment variable, which points to the repo or folder for a canvas course compliant with `markdown2canvas`')
-
-    if args.assignment is None:
-        raise RuntimeError(f'script `download_ungraded_attachments.py` requires an argument `--assignment` with value the number of the assignment you want to download from.  for example, `6a`.')
 
 
-    if args.extension is None:
-        args.extension = '*'
-
-
-    if args.dest is None:
-        args.dest = './downloaded_attachments'
-
-    if args.dry_run is None:
-        args.dry_run = False
-    else:
-        args.dry_run = bool(args.dry_run)
-
-    if args.ignore_test_student is None:
-        args.ignore_test_student = False
-    else:
-        args.ignore_test_student = bool(args.ignore_test_student)
 
     return args
 
@@ -108,14 +103,16 @@ def get_current_course_ids(repo_variable_name):
 
 
 
-def get_matching_assignment(course, assignment_number):
+def get_matching_assignment(course, assignment_number, format_string):
     assignments = course.get_assignments()
 
     matching = []
 
+    is_match = lambda test_name, assignment_number: test_name.startswith(format_string.format(assignment_number))
+
     for assignment in assignments:
-        short_name = assignment.name.split(' --- ')[0]
-        if short_name == f'🏠 Assignment {assignment_number}':
+
+        if is_match(assignment.name, assignment_number):
             matching.append(assignment)
 
     if len(matching) == 0:
@@ -147,7 +144,11 @@ def download_latest_ungraded_attachments(course, assignment, extension='*',dest=
     no_ungraded_submissions = []
     failed_downloads = []
 
-    for s_per_student in assignment.get_submissions(include=['submission_history']):
+    submissions = assignment.get_submissions(include=['submission_history'])
+
+
+    from tqdm import tqdm
+    for s_per_student in tqdm(submissions):
         
         u = course.get_user(s_per_student.user_id)
         n = u.name
@@ -198,6 +199,9 @@ def download_latest_ungraded_attachments(course, assignment, extension='*',dest=
 
         # now have a dict of their files, and the submissions they appeared in
         # so filter for just the most recent one with that name
+
+        
+
         for filename, appearances in attachments_this_student.items():
             submission_numbers = [int(n) for n,q in appearances.items()]
             max_number = max(submission_numbers)
@@ -243,7 +247,16 @@ def download_latest_ungraded_attachments(course, assignment, extension='*',dest=
 
 
 
+def get_format_string(repo_variable_name):
+    repo_loc = os.environ.get(repo_variable_name)
+    if repo_loc is None:
+        print(f'`upload_feedback.py` needs an environment variable `{repo_variable_name}`, containing the full path of git repo for DS710')
+        sys.exit()
 
+    import json
+    with open(os.path.join(repo_loc, '_course_metadata/autograding.json')) as file:
+        autograding_meta = json.loads(file.read())
+    return autograding_meta["assignment_naming_convention"]["format_spec"]
 
 
 if __name__=="__main__":
@@ -264,7 +277,7 @@ if __name__=="__main__":
     course = canvas.get_course(course_ids[0]) 
 
 
-    assignment = get_matching_assignment(course, assignment_number)
+    assignment = get_matching_assignment(course, assignment_number,get_format_string(repo_variable_name))
 
     downloaded_files = download_latest_ungraded_attachments(course, assignment, extension, dest, dry_run=dry_run, ignore_test_student=True)
 
