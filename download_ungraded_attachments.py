@@ -215,7 +215,7 @@ def download_latest_ungraded_attachments(course, assignment, extension='*',dest=
 
 
     
-    manifest_loc = join(dest,'manifest.txt')
+    manifest_loc = join(dest,'_manifest.txt')
 
     with open(manifest_loc,'w') as f:
         for d in downloaded_files:
@@ -231,7 +231,7 @@ def download_latest_ungraded_attachments(course, assignment, extension='*',dest=
 
     if len(failed_downloads)>0:
 
-        fail_record_loc = join(dest,'failed_downloads.txt')
+        fail_record_loc = join(dest,'_failed_downloads.txt')
         with open(fail_record_loc,'w') as f:
             for d in failed_downloads:
                 f.write(f'{d[1]}\n')
