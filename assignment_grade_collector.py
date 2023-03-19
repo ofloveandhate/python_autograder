@@ -294,7 +294,8 @@ def write_grades_to_csv(grades):
     grades.sort_values(by=['section','sortable_name'], inplace=True)
 
     # round, because all those decimal places were not helpful at all.
-    grades[['percent_pass_post','percent_pass_pre','score_total_assistive_grading','score_from_presubmission_checker','score_from_postubmission_checker']] = grades[['percent_pass_post','percent_pass_pre','score_total_assistive_grading','score_from_presubmission_checker','score_from_postsubmission_checker']].round(3)
+    grades[     ['percent_pass_post','percent_pass_pre','score_total_assistive_grading','score_from_presubmission_checker','score_from_postubmission_checker']] = \
+         grades[['percent_pass_post','percent_pass_pre','score_total_assistive_grading','score_from_presubmission_checker','score_from_postsubmission_checker']].round(3)
 
     fname = '_autograding/checker_results.csv'
     grades.to_csv(fname)
