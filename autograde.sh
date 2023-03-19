@@ -169,4 +169,4 @@ python "${SCRIPT_DIR}"/assignment_grade_collector.py $COURSE_REPO_LOC
 
 
 echo "done.  results and artifacts in ./autograding/"
-echo "put your comments in _autograding/feedback.xml, and then run 'python ${SCRIPT_DIR}/upload_feedback.py'.  grades are entered separately from feedback!"
+echo "put your comments in _autograding/feedback.xml, and then run 'python ${SCRIPT_DIR}/upload_feedback.py'.  grades are written into same xml document as feedback!"
