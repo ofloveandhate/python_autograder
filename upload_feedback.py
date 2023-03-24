@@ -66,7 +66,7 @@ def make_canvas():
 def get_current_course_ids(repo_variable_name):
     repo_loc = os.environ.get(repo_variable_name)
     if repo_loc is None:
-        print(f'`upload_feedback.py` needs an environment variable `{repo_variable_name}`, containing the full path of git repo for DS710')
+        print(f'`upload_feedback.py` needs an environment variable `{repo_variable_name}`, containing the full path of git repo for the class you\'re grading')
         sys.exit()
 
     import json
@@ -84,7 +84,15 @@ def get_current_course_ids(repo_variable_name):
         if start < right_now and right_now < end:
             return semester['canvas ids']
 
+def get_extra_grade_categories(repo_variable_name):
+    repo_loc = os.environ.get(repo_variable_name)
 
+    import json
+
+    with open(os.path.join(repo_loc, '_course_metadata/autograding.json')) as file:
+        autograding_info = json.loads(file.read())
+
+    return autograding_info["extra_categories"]
 
 def read_data():
     xml_data = objectify.parse('_autograding/feedback.xml')  # Parse XML data
@@ -270,7 +278,9 @@ def upload(autograding_data, assignment_number, repo_variable_name, dry_run = Tr
         upload_pytest_feedback(data_this_student, submission, assignment, dry_run)
 
 
-        upload_score(data_this_student, submission, assignment, dry_run)
+        extra_category_names = get_extra_grade_categories(repo_variable_name)
+
+        upload_score(data_this_student, submission, assignment, extra_category_names, dry_run)
 
 
 def upload_pytest_feedback(data_this_student, submission, assignment, dry_run):
@@ -313,7 +323,14 @@ def upload_pytest_feedback(data_this_student, submission, assignment, dry_run):
             print(f'DRYRUN -- would put comment in submission, {f}')
 
 
-def upload_score(data_this_student, submission, assignment, dry_run):
+def upload_score(data_this_student, submission, assignment, extra_category_names, dry_run):
+    """
+    data_this_student is an xml object
+    submission is a canvas object
+    assignment is a canvas object
+    dry_run is a boolean value
+    """
+
 
     def get_and_format(column,num_t):
         try:
@@ -329,7 +346,12 @@ def upload_score(data_this_student, submission, assignment, dry_run):
 
     report += get_and_format_as_float('score_from_presubmission_checker')
     report += get_and_format_as_float('score_from_postsubmission_checker')
-    #report += get_and_format_as_float('score_instructor_discretion')
+
+
+    for cat in extra_category_names:
+        report += get_and_format_as_float(cat)
+
+
     report += get_and_format_as_float('score_reflection')
     report += '\nSum: ' + get_and_format_as_float('score_given')
 
