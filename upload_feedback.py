@@ -95,7 +95,7 @@ def get_extra_grade_categories(repo_variable_name):
     return autograding_info["extra_categories"]
 
 def read_data():
-    xml_data = objectify.parse('_autograding/feedback.xml')  # Parse XML data
+    xml_data = objectify.parse('_autograding/feedback_preprocessed.xml')  # Parse XML data
 
     root = xml_data.getroot()  # Root element
 
@@ -200,7 +200,39 @@ def get_format_string(repo_variable_name):
     return autograding_meta["assignment_naming_convention"]["format_spec"]
 
 
+def preprocess_feedback_xml():
+    # replaces < and > with their codes, so that the markdown file is valid.  
 
+    open_marker = '<manual_feedback>'
+    close_marker = '</manual_feedback>'
+
+
+    with open('_autograding/feedback.xml','r',encoding='utf-8') as f:
+        feedback_as_str = f.read()
+
+    stuff_before = feedback_as_str.split(open_marker)
+    
+
+
+    
+
+    feedback = [a.split(close_marker)[0] for a in stuff_before[1:]] 
+    stuff_after = [a.split(close_marker)[1] for a in stuff_before[1:]] # 
+
+
+    feedback = [f.replace('<','&lt;').replace('>','&gt;') for f in feedback]
+
+
+    result = stuff_before[0] # seed the loop
+    for a,b in zip(feedback, stuff_after):
+        result += open_marker + a + close_marker + b
+
+
+    # write to an intermediate file
+    with open('_autograding/feedback_preprocessed.xml','w',encoding='utf-8') as f:
+        f.write(result)
+
+    return
 
 
 
@@ -378,8 +410,12 @@ if __name__=="__main__":
     repo_variable_name, assignment_number = get_repo_name_and_assignment_number()
     dry_run = get_dry_run()
 
+
+    preprocess_feedback_xml()
+
+
     students = read_data()
 
-
+    
 
     upload(students, assignment_number, repo_variable_name, dry_run = dry_run)
