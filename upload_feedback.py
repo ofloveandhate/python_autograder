@@ -273,7 +273,7 @@ def upload(autograding_data, assignment_number, repo_variable_name, dry_run = Tr
     for data_this_student in autograding_data:
         n = data_this_student['sortable_name']
 
-        print(f'processing feedback for {n}')
+        
 
         if data_this_student['auto_feedback_pre'].startswith('no submission'):
             if dry_run:
@@ -288,7 +288,8 @@ def upload(autograding_data, assignment_number, repo_variable_name, dry_run = Tr
             #     print(f'no submission from data_this_student {n}, giving stock feedback:\n{q}')
 
 
-
+        print(f'processing feedback for {n}')
+        
         # get their submission.  only do this if they actually submitted.  will get something either way!!!
         submission = get_matching_submission(assignment, int(data_this_student['student_id']))
 
