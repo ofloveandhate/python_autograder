@@ -240,7 +240,9 @@ def download_latest_ungraded_attachments(course, assignment, extension='*',dest=
             for d in failed_downloads:
                 f.write(f'{d[1]}\n')
 
-        print('there were {} failed downloads.  urls for those files are at {}\n'.format(len(failed_downloads),fail_record_loc))
+        import warnings
+
+        warnings.warn('there were {} failed downloads.  urls for those files are at {}\n'.format(len(failed_downloads),fail_record_loc))
     
 
     return downloaded_files
