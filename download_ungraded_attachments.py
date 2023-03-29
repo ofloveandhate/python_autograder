@@ -217,9 +217,9 @@ def download_latest_ungraded_attachments(course, assignment, extension='*',dest=
                     failed_downloads.append((z))
                     print('unable to download {} from student {} with message {}'.format(z[0],n,e))
 
-
-    
-    manifest_loc = join(dest,'_manifest.txt')
+    import datetime
+    now = datetime.datetime.now()
+    manifest_loc = join(dest,'_manifest_{}.txt'.format(now.strftime("%Y%m%d-%H.%M")))
 
     with open(manifest_loc,'w') as f:
         for d in downloaded_files:
