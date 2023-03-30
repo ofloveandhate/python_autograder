@@ -280,7 +280,7 @@ def reformat_grades_csv(fname):
             f.write(line)
 
 
-def write_grades_to_csv(grades):
+def write_grades_to_csv(grades, omit_no_current_submission):
     """
     writes `grades` data frame to file, making some adjustments
     to the data frame first.
@@ -296,6 +296,11 @@ def write_grades_to_csv(grades):
     # round, because all those decimal places were not helpful at all.
     grades[     ['percent_pass_post','percent_pass_pre','score_total_assistive_grading','score_from_presubmission_checker','score_from_postubmission_checker']] = \
          grades[['percent_pass_post','percent_pass_pre','score_total_assistive_grading','score_from_presubmission_checker','score_from_postsubmission_checker']].round(3)
+
+
+    # it's actually useful to have the csv with all scores and all students, so I commented this out.
+    # if omit_no_current_submission:
+    #     grades.dropna(subset=["file_number_pre"],inplace=True)
 
     fname = '_autograding/checker_results.csv'
     grades.to_csv(fname)
@@ -403,6 +408,10 @@ def additional_processing_grades(grades, autograding_specs):
 
 if __name__=="__main__":
 
+
+    omit_no_current_submission = True
+
+
     try:
         import sys
         repo_variable_name = sys.argv[1]
@@ -428,9 +437,11 @@ if __name__=="__main__":
     feedback_and_grades = feedback_and_grades.merge(students, left_on = ['student_id'], right_on =['student_id'], how = 'right')
 
 
+    if omit_no_current_submission:
+        feedback_and_grades = feedback_and_grades[ feedback_and_grades['num_tests_pre'].notna() ]
 
 
 
     process_feedback_and_grades(feedback_and_grades)
 
-    write_grades_to_csv(grades)
+    write_grades_to_csv(grades, omit_no_current_submission)
