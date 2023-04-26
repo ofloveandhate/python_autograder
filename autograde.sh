@@ -55,7 +55,7 @@ echo "autograding $1 assignment $2 using autograding files from '$COURSE_REPO_LO
 ################3
 # move pdf's to make view less shitty
 echo "moving pdf's to ./reflections"
-python ${SCRIPT_DIR}/move_reflections.py
+python3 ${SCRIPT_DIR}/move_reflections.py
 
 
 ##########
@@ -158,15 +158,16 @@ mv "./assignment$2_sol.py" ./_autograding
 ####################################
 # get the current student list, so that students who didn't submit can get 0's
 echo 'getting current student list from Canvas, automatically'
-echo "python "${SCRIPT_DIR}"/get_current_students.py $COURSE_REPO_LOC"
-python "${SCRIPT_DIR}"/get_current_students.py $COURSE_REPO_LOC
+echo "python3 "${SCRIPT_DIR}"/get_current_students.py $COURSE_REPO_LOC"
+python3 "${SCRIPT_DIR}"/get_current_students.py $COURSE_REPO_LOC
 
 
 #################################
 # collect the results, using our friend, python
 echo 'collecting and formatting'
-python "${SCRIPT_DIR}"/assignment_grade_collector.py $COURSE_REPO_LOC
+python3 "${SCRIPT_DIR}"/assignment_grade_collector.py $COURSE_REPO_LOC
 
 
 echo "done.  results and artifacts in ./autograding/"
-echo "put your comments in _autograding/feedback.xml, and then run 'python ${SCRIPT_DIR}/upload_feedback.py'.  grades are written into same xml document as feedback!"
+echo "put your comments in _autograding/feedback.xml, and then run 'python3 ${SCRIPT_DIR}/upload_feedback.py $1_REPO_LOC $2'"
+echo "grades are written into same xml document as feedback!"
