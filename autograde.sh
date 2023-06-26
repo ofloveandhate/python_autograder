@@ -27,7 +27,7 @@ set -e
 command -v timeout >/dev/null 2>&1 || { echo >&2 "'autograde.sh' requires 'timeout' but it's not installed.  On MacOS, install using 'brew install coreutils'.  Aborting."; exit 1; }
 
 COURSE_REPO_LOC="$1_REPO_LOC"
-echo ${!COURSE_REPO_LOC}
+echo "course repo location being used: ${!COURSE_REPO_LOC}"
 
 if [ -z $1 ];
 	then
@@ -50,7 +50,21 @@ if [ -z ${COURSE_REPO_LOC+x} ];
 		exit 1 # https://stackoverflow.com/questions/1378274/in-a-bash-script-how-can-i-exit-the-entire-script-if-a-certain-condition-occurs
 fi
 
-echo "autograding $1 assignment $2 using autograding files from '$COURSE_REPO_LOC'";
+
+
+
+################## check if there are even any files to grade.  
+
+if test -n "$(find ./ -maxdepth 1 -name '*.py' -print -quit)"
+then
+    echo "autograding $1 assignment $2 using autograding files from '$COURSE_REPO_LOC'";
+else
+	echo "no python files found in your current directory.  are you in the correct directory?"
+    exit -42
+fi
+
+
+
 
 ################3
 # move pdf's to make view less shitty
