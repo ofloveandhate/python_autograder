@@ -14,6 +14,6 @@ def move_dir(src: str, dst: str, pattern: str = '*'):
         shutil.move(os.path.join(src, f), os.path.join(dst, f))
 
 
-move_dir('./','./reflections/','*reflection*.pdf')
-move_dir('./','./reflections/','*Reflection*.pdf')
+move_dir('./','./_reflections/','*reflection*.pdf')
+move_dir('./','./_reflections/','*Reflection*.pdf')
 

@@ -54,7 +54,7 @@ echo "autograding $1 assignment $2 using autograding files from '$COURSE_REPO_LO
 
 ################3
 # move pdf's to make view less shitty
-echo "moving pdf's to ./reflections"
+echo "moving pdf's to ./_reflections"
 python3 ${SCRIPT_DIR}/move_reflections.py
 
 
