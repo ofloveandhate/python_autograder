@@ -36,7 +36,7 @@ def process_filename(filename):
 
 
 
-def get_course_autograding_specs(repo_variable_name):
+def get_course_autograding_specs(repo_variable_name, assignment_number):
     repo_loc = os.environ.get(repo_variable_name)
     if repo_loc is None:
         print(f'`assignment_grade_collector.py` needs an environment variable `{repo_variable_name}`, containing the full path of git repo for the course youre autograding')
@@ -44,10 +44,16 @@ def get_course_autograding_specs(repo_variable_name):
 
     import json
     with open(os.path.join(repo_loc, '_course_metadata/autograding.json')) as file:
-        return json.loads(file.read())
+        autograding_specs = json.loads(file.read())
 
+    default_reflection_message = "Thank you for your thoughtful reflection.  "
+    if 'reflection_message' not in autograding_specs:
+        autograding_specs['reflection_message'] = {assignment_number: default_reflection_message}
 
+    if assignment_number not in autograding_specs['reflection_message']:
+        autograding_specs['reflection_message'] = {assignment_number: default_reflection_message}
 
+    return autograding_specs
 
 
 
@@ -326,7 +332,7 @@ def generate_auto_feedback_message(test_suite_result, pre_or_post):
 
 
 
-def process_feedback_and_grades(feedback_and_grades):
+def process_feedback_and_grades(feedback_and_grades, reflection_message):
     feedback_and_grades = feedback_and_grades.copy()  # stupid warnings cause so much headache.  silence!
 
 
@@ -347,7 +353,7 @@ def process_feedback_and_grades(feedback_and_grades):
 
         else:
             n = row['sortable_name']
-            return f"\n\nInstructor's manually written feedback for {n}:\n\n\n## Code\n\n*\n\n## Reflection\n\nThank you for your thoughtful reflection.\n\n---\n\n\n"
+            return f"\n\nInstructor's manually written feedback for {n}:\n\n\n## Code\n\n*\n\n## Reflection\n\n{reflection_message}\n\n---\n\n\n"
 
 
     feedback_and_grades['manual_feedback'] = feedback_and_grades.apply(default_feedback_message, axis=1) # TODO this should be read from a course meta
@@ -415,14 +421,15 @@ if __name__=="__main__":
     try:
         import sys
         repo_variable_name = sys.argv[1]
+        assignment_number = sys.argv[2]
     except:
-        raise RuntimeError(f'script `assignment_grade_collector` is intended to be called with the name of an environment variable after the script name.  add it.  for example, `python assignment_grade_collector DS150_REPO_LOC`')
+        raise RuntimeError(f'script `assignment_grade_collector` is intended to be called with the name of an environment variable after the script name, and then an assignment number.  add it.  for example, `python assignment_grade_collector DS150_REPO_LOC 6a`')
 
 
 
     students = get_students()
 
-    autograding_specs = get_course_autograding_specs(repo_variable_name)
+    autograding_specs = get_course_autograding_specs(repo_variable_name, assignment_number)
 
     presub = collect('_autograding/pre_checker_results')
     postsub = collect('_autograding/post_checker_results')
@@ -441,7 +448,8 @@ if __name__=="__main__":
         feedback_and_grades = feedback_and_grades[ feedback_and_grades['num_tests_pre'].notna() ]
 
 
+    reflection_message = autograding_specs['reflection_message'][assignment_number]
 
-    process_feedback_and_grades(feedback_and_grades)
+    process_feedback_and_grades(feedback_and_grades, reflection_message)
 
     write_grades_to_csv(grades, omit_no_current_submission)
