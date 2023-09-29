@@ -179,6 +179,7 @@ python3 "${SCRIPT_DIR}"/get_current_students.py $COURSE_REPO_LOC
 #################################
 # collect the results, using our friend, python
 echo 'collecting and formatting'
+echo "python3 "${SCRIPT_DIR}"/assignment_grade_collector.py $COURSE_REPO_LOC $2"
 python3 "${SCRIPT_DIR}"/assignment_grade_collector.py $COURSE_REPO_LOC $2
 
 
