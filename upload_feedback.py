@@ -287,7 +287,8 @@ def upload(autograding_data, assignment_number, repo_variable_name, dry_run = Tr
             #     n = data_this_student['sortable_name']
             #     print(f'no submission from data_this_student {n}, giving stock feedback:\n{q}')
 
-
+        if dry_run:
+            print('\n\n\n-----------------------\n\n\n')
         print(f'processing feedback for {n}')
         
         # get their submission.  only do this if they actually submitted.  will get something either way!!!
@@ -318,42 +319,56 @@ def upload(autograding_data, assignment_number, repo_variable_name, dry_run = Tr
 
 def upload_pytest_feedback(data_this_student, submission, assignment, dry_run):
 
-    p = float(data_this_student['percent_pass_pre'])
-    if p<1:
-        feedback_name = join('_autograding','presubmission_checker_auto_feedback.pdf')
-        feedback_to_pdf(data_this_student['auto_feedback_pre'], feedback_name)
+    def get_raw_output(pre_or_post):
+        try:
+            test_output_file_name = data_this_student[f'test_output_file_name_{pre_or_post}']
+        except:
+            a = data_this_student['name_from_submitted_file']
+            b = int(float(data_this_student['student_id']))
+            c = int(float(data_this_student[f'file_number_{pre_or_post}']))
+            test_output_file_name_root = f'{a}_{b}_{c}'
+            test_output_file_name = 'unfound'
 
-        if not dry_run:
-            submission.upload_comment(feedback_name)
+            for f in os.listdir(join('_autograding',f'{pre_or_post}_checker_results')):
+                if f.startswith(test_output_file_name_root) and f.endswith('.out'):
+                    test_output_file_name = f
+                    break
+
+            if (test_output_file_name == "unfound"):
+                raise RuntimeError(f"failed to find the {pre_or_post}-checker result filename for student {a}!!!")
+
+        return join('_autograding',f'{pre_or_post}_checker_results',test_output_file_name)
+    
+
+    def do_feedback(pre_or_post):
+
+        p = float(data_this_student[f'percent_pass_{pre_or_post}'])
+
+        if p<1:
+            processed_feedback_filename = join('_autograding',f'{pre_or_post}submission_checker_auto_feedback.pdf')
+            feedback_to_pdf(data_this_student[f'auto_feedback_{pre_or_post}'], processed_feedback_filename)
+
+            test_output_file_name = get_raw_output(pre_or_post)
+            f = f"Not all unit tests passed in the {pre_or_post}-checker, so these next two uploaded files contain machine-generated results."
+            if not dry_run:
+                submission.edit(comment={'text_comment':f})
+                submission.upload_comment(test_output_file_name)
+                submission.upload_comment(processed_feedback_filename)
+            else:
+                print(f'DRYRUN -- not all tests passed {pre_or_post}, so would put this text comment: {f}')
+                print(f'DRYRUN -- would upload file as comment to submission, {test_output_file_name}')
+                print(f'DRYRUN -- would upload file as comment to submission, {processed_feedback_filename}')
+
         else:
-            print(f'DRYRUN -- would upload file as comment to submission, {feedback_name}')
+            f = data_this_student[f'auto_feedback_{pre_or_post}']
+            if not dry_run:
+                submission.edit(comment={'text_comment':f})
+            else:
+                print(f'DRYRUN -- all tests passed in {pre_or_post}, would put comment in submission, {f}')
 
-    else:
-        f = data_this_student['auto_feedback_pre']
-        if not dry_run:
-            submission.edit(comment={'text_comment':f})
-        else:
-            print(f'DRYRUN -- would put comment in submission, {f}')
+    do_feedback("pre")
+    do_feedback("post")
 
-
-
-
-    p = float(data_this_student['percent_pass_post'])
-    if p<1:
-        feedback_name = join('_autograding','postsubmission_checker_auto_feedback.pdf')
-        feedback_to_pdf(data_this_student['auto_feedback_post'], feedback_name)
-
-        if not dry_run:
-            submission.upload_comment(feedback_name)
-        else:
-            print(f'DRYRUN -- would upload file as comment to submission, {feedback_name}')
-
-    else:
-        f = data_this_student['auto_feedback_post']
-        if not dry_run:
-            submission.edit(comment={'text_comment':f})
-        else:
-            print(f'DRYRUN -- would put comment in submission, {f}')
 
 
 def upload_score(data_this_student, submission, assignment, extra_category_names, dry_run):

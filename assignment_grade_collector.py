@@ -78,7 +78,7 @@ def collect(path):
     success_string = []
     failure_cases = []
     auto_feedback = []
-
+    test_output_file_name = []
 
 
 
@@ -104,7 +104,7 @@ def collect(path):
             num_errors.append(xml.errors)
             num_passes.append(xml.tests-xml.failures-xml.errors)# are there other kinds of test failures?!?
 
-
+            test_output_file_name.append(f[:-4]+"_their_output.out") # cut off the .xml, replace with the other string.  
 
 
             failures = []
@@ -120,7 +120,7 @@ def collect(path):
             auto_feedback.append(tests_to_feedback(xml, join(dirname,pyname)))
 
 
-    df = pd.DataFrame({'name_from_submitted_file':name, "student_id":student_id,"file_number":file_number,
+    df = pd.DataFrame({'name_from_submitted_file':name, "student_id":student_id,"file_number":file_number,"test_output_file_name":test_output_file_name,
                        'auto_feedback':auto_feedback, "num_passes":num_passes, "num_fails":num_fails, "num_errors":num_errors, 'num_tests':num_tests, 'failure_cases':failure_cases})
     df['percent_pass'] = df['num_passes']/df['num_tests']
 
@@ -293,7 +293,7 @@ def write_grades_to_csv(grades, omit_no_current_submission):
     """
     # grades.set_index('student_id')
 
-    grades.drop(['auto_feedback_pre','auto_feedback_post','name_from_submitted_file','file_number_post','failure_cases_pre','failure_cases_post'],inplace=True,axis=1)
+    grades.drop(['auto_feedback_pre','auto_feedback_post','name_from_submitted_file','file_number_post','failure_cases_pre','failure_cases_post','test_output_file_name_post','test_output_file_name_pre'],inplace=True,axis=1)
 
     grades = grades.merge(students, left_on = ['student_id'], right_on =['student_id'], how = 'right')
 
