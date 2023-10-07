@@ -19,6 +19,7 @@
 # first, get the directory of this script, because other useful things are in there, too.
 SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 
+timeout_duration="30" # number of seconds.  this should probably be an argument to this script.
 
 # https://stackoverflow.com/questions/3474526/stop-on-first-error
 set -e
@@ -129,7 +130,19 @@ for filename in `find . -type f -name "*.py"`; do
 	  	echo "incorrectly named submission, $filename"
 	  	continue
 	  fi
-	  timeout --foreground 30s pytest --junitxml=./_autograding/pre_checker_results/"$filename".xml assignment$2_checker.py "$filename" 1> ./_autograding/pre_checker_results/"$filename"_their_output.out
+	  # using SIGINT so that we get a nice traceback
+	  # using --full-trace so that the student / we get a stack trace to find what was running when it was killed.
+	  timeout  --signal=SIGINT --foreground "$timeout_duration"s pytest --full-trace --junitxml=./_autograding/pre_checker_results/"$filename".xml assignment$2_checker.py "$filename" 1> ./_autograding/pre_checker_results/"$filename"_their_output.out
+	  # timeout returns 124 if the command timed out. 
+	  timeout_status=$?
+
+	  if [[ $timeout_status -eq 124 ]]; then
+	  	message="🐢 checking $filename with assignment$2_checker.py timed out after $timeout_duration seconds, and consequently generated no test results.  automatically generated result containing one failing test written instead."
+	  	echo $message
+	  	echo $message >> ./_autograding/pre_checker_results/"$filename"_their_output.out 
+	  	python3 "${SCRIPT_DIR}"/make_timeout_xml.py ./_autograding/pre_checker_results/"$filename".xml $timeout_duration
+	  fi
+
 	fi
 done #< <(find . -maxdepth 1 -type d -print0)
 
@@ -154,7 +167,20 @@ set +e
 for filename in `find . -type f -name "*.py"`; do
 	if [[ "$filename" != *"checker.py" ]] && [[ "$filename" != *"sol.py" ]]; then
 	  echo "$filename"
-	  timeout --foreground 30s pytest --junitxml=./_autograding/post_checker_results/"$filename".xml "assignment$2_postsubmission_checker.py" "$filename" 1> ./_autograding/post_checker_results/"$filename"_their_output.out
+	  # using SIGINT so that we get a nice traceback
+	  # using --full-trace so that the student / we get a stack trace to find what was running when it was killed.
+	  timeout  --signal=SIGINT --foreground "$timeout_duration"s pytest --full-trace --junitxml=./_autograding/post_checker_results/"$filename".xml "assignment$2_postsubmission_checker.py" "$filename" 1> ./_autograding/post_checker_results/"$filename"_their_output.out
+	  # timeout returns 124 if the command timed out.  
+	  # see https://stackoverflow.com/questions/38534097/bash-if-command-timeout-execute-something-else
+	  timeout_status=$?
+
+	  if [[ $timeout_status -eq 124 ]]; then
+	  	message="🐢 checking $filename with assignment$2_postsubmission_checker.py timed out after $timeout_duration seconds, and consequently generated no test results.  automatically generated result containing one failing test written instead."
+	  	echo $message
+	  	echo $message >> ./_autograding/post_checker_results/"$filename"_their_output.out 
+	  	python3 "${SCRIPT_DIR}"/make_timeout_xml.py ./_autograding/post_checker_results/"$filename".xml $timeout_duration
+	  fi
+
 	fi
 
 done;
