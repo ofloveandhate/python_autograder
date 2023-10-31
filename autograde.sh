@@ -162,7 +162,7 @@ done #< <(find . -maxdepth 1 -type d -print0)
 # remove empty files
 find ./_autograding/pre_checker_results/ -name "*output.out" -size  0  -delete
 
-mv "./assignment$assignment_num_checker.py" ./_autograding
+mv "./assignment${assignment_num}_checker.py" ./_autograding
 
 
 set -e
