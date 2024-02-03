@@ -300,15 +300,15 @@ def write_grades_to_csv(grades, omit_no_current_submission):
     grades.sort_values(by=['section','sortable_name'], inplace=True)
 
     # round, because all those decimal places were not helpful at all.
-    grades[     ['percent_pass_post','percent_pass_pre','score_total_assistive_grading','score_from_presubmission_checker','score_from_postubmission_checker']] = \
-         grades[['percent_pass_post','percent_pass_pre','score_total_assistive_grading','score_from_presubmission_checker','score_from_postsubmission_checker']].round(3)
+    grades[     ['percent_pass_post','percent_pass_pre','score_total_assistive_grading','score_presubmission','score_postsubmission']] = \
+         grades[['percent_pass_post','percent_pass_pre','score_total_assistive_grading','score_presubmission','score_postsubmission']].round(3)
 
 
     # it's actually useful to have the csv with all scores and all students, so I commented this out.
     # if omit_no_current_submission:
     #     grades.dropna(subset=["file_number_pre"],inplace=True)
 
-    fname = '_autograding/checker_results.csv'
+    fname = '_autograding/unit_test_results.csv'
     grades.to_csv(fname)
 
     reformat_grades_csv(fname)
@@ -387,17 +387,17 @@ def additional_processing_grades(grades, autograding_specs):
 
 
 
-    grades['score_from_presubmission_checker'] = weight_pre*grades['percent_pass_pre']
-    grades['score_from_postsubmission_checker'] = weight_post*grades['percent_pass_post']
+    grades['score_presubmission'] = weight_pre*grades['percent_pass_pre']
+    grades['score_postsubmission'] = weight_post*grades['percent_pass_post']
 
     # combine
-    grades['score_total_assistive_grading'] =  (grades['score_from_presubmission_checker'] +  grades['score_from_postsubmission_checker']).round(3)
+    grades['score_total_assistive_grading'] =  (grades['score_presubmission'] +  grades['score_postsubmission']).round(3)
 
     for cat in autograding_specs['extra_categories']:
         grades[cat] = '   '  # make space for these in the sheet
 
 
-    grades['score_reflection'] = '   '  # make space for these in the sheet
+    # grades['score_reflection'] = '   '  # make space for these in the sheet
     grades['score_given'] = '   '  # make space for these in the sheet
 
 
@@ -431,8 +431,8 @@ if __name__=="__main__":
 
     autograding_specs = get_course_autograding_specs(repo_variable_name, assignment_number)
 
-    presub = collect('_autograding/pre_checker_results')
-    postsub = collect('_autograding/post_checker_results')
+    presub = collect('_autograding/pre_submission_results')
+    postsub = collect('_autograding/post_submission_results')
 
     grades = presub.merge(postsub, on=('student_id'), suffixes=['_pre','_post'])
 

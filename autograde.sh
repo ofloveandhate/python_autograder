@@ -19,7 +19,7 @@
 # first, get the directory of this script, because other useful things are in there, too.
 SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 
-timeout_duration="30" # number of seconds.  this should probably be an argument to this script.
+timeout_duration="60" # number of seconds.  this should probably be an argument to this script.
 
 # https://stackoverflow.com/questions/3474526/stop-on-first-error
 set -e
@@ -100,17 +100,17 @@ function copy_data_files {
 
 
 ################
-# run the pre-submission checker for every submitted file
+# run the pre-submission tests for every submitted file
 
 
-# copy the checker file to this folder.  this is because the checker imports the file, and if it's not in the same location, things break.
-prechecker=${!COURSE_REPO_LOC}/Lesson_${assignment_num}/assignment${assignment_num}_checker.py
-echo "grading using pre-submission checker $prechecker"
+# copy the unit test file to this folder.  this is because the test imports the file, and if it's not in the same location, things break.
+presuite=${!COURSE_REPO_LOC}/Lesson_${assignment_num}/test_assignment${assignment_num}.py
+echo "grading using pre-submission unit tests: $presuite"
 
-cp "$prechecker" ./
+cp "$presuite" ./
 
 
-# copy the solutions file to this folder.  this is because the checker imports the file, and if it's not in the same location, things break.
+# copy the solutions file to this folder.  this is because the unit tests imports the file, and if it's not in the same location, things break.
 solutionsfile=${!COURSE_REPO_LOC}/Lesson_${assignment_num}/assignment${assignment_num}_sol.py
 echo "using instructor solution from file ${solutionsfile}"
 
@@ -118,9 +118,9 @@ cp "$solutionsfile" ./
 
 
 # make a directory into which to store the results of running the tests
-if [ ! -d ./_autograding/pre_checker_results ]; then
-	rm -rf ./_autograding/pre_checker_results
-    mkdir -p ./_autograding/pre_checker_results
+if [ ! -d ./_autograding/pre_submission_results ]; then
+	rm -rf ./_autograding/pre_submission_results
+    mkdir -p ./_autograding/pre_submission_results
 fi
 
 set +e
@@ -131,10 +131,9 @@ OIFS="$IFS"
 IFS=$'\n'
 
 for filename in `find . -type f -name "*.py"`; do
-# for i in $(ls *.py); do
 	# about the 2>, see https://stackoverflow.com/questions/14246119/python-how-can-i-redirect-the-output-of-unittest-obvious-solution-doesnt-wor/22710204
 
-	if [[ "$filename" != *"checker.py" ]] && [[ "$filename" != *"sol.py" ]]; then
+	if [[ "$filename" != *"test_assignment${assignment_num}"*".py" ]] && [[ "$filename" != *"sol.py" ]]; then
 	  echo "$filename"
 	  if [[ "$filename" != *"assignment${assignment_num}"*".py" ]]; then
 	  	echo "incorrectly named submission, $filename"
@@ -145,56 +144,56 @@ for filename in `find . -type f -name "*.py"`; do
 
 	  # using SIGINT so that we get a nice traceback
 	  # using --full-trace so that the student / we get a stack trace to find what was running when it was killed.
-	  timeout  --signal=SIGINT --foreground "$timeout_duration"s pytest --full-trace --junitxml=./_autograding/pre_checker_results/"$filename".xml "assignment${assignment_num}_checker.py" "$filename" 1> ./_autograding/pre_checker_results/"$filename"_their_output.out
+	  timeout  --signal=SIGINT --foreground "$timeout_duration"s pytest --full-trace --junitxml=./_autograding/pre_submission_results/"$filename".xml "test_assignment${assignment_num}.py" "$filename" 1> ./_autograding/pre_submission_results/"$filename"_their_output.out
 	  # timeout returns 124 if the command timed out. 
 	  timeout_status=$?
 
 	  if [[ $timeout_status -eq 124 ]]; then
-	  	message="🐢 checking $filename with assignment${assignment_num}_checker.py timed out after $timeout_duration seconds, and consequently generated no test results.  automatically generated result containing one failing test written instead."
+	  	message="🐢 testing $filename with test_assignment${assignment_num}.py timed out after $timeout_duration seconds, and consequently generated no test results.  automatically generated result containing one failing test written instead."
 	  	echo $message
-	  	echo $message >> ./_autograding/pre_checker_results/"$filename"_their_output.out 
-	  	python3 "${SCRIPT_DIR}"/make_timeout_xml.py ./_autograding/pre_checker_results/"$filename".xml $timeout_duration
+	  	echo $message >> ./_autograding/pre_submission_results/"$filename"_their_output.out 
+	  	python3 "${SCRIPT_DIR}"/make_timeout_xml.py ./_autograding/pre_submission_results/"$filename".xml $timeout_duration
 	  fi
 
 	fi
 done #< <(find . -maxdepth 1 -type d -print0)
 
 # remove empty files
-find ./_autograding/pre_checker_results/ -name "*output.out" -size  0  -delete
+find ./_autograding/pre_submission_results/ -name "*output.out" -size  0  -delete
 
-mv "./assignment${assignment_num}_checker.py" ./_autograding
+
 
 
 set -e
 ################
-# run the post-submission checker for every submitted file
-postchecker="${!COURSE_REPO_LOC}/Lesson_${assignment_num}/assignment${assignment_num}_postsubmission_checker.py"
-echo "grading using post-submission checker $postchecker"
-cp "$postchecker" ./
+# run the post-submission unit tests for every submitted file
+postsuite="${!COURSE_REPO_LOC}/Lesson_${assignment_num}/test_assignment${assignment_num}_postsubmission.py"
+echo "grading using post-submission unit tests: $postsuite"
+cp "$postsuite" ./
 
-if [ ! -d ./_autograding/post_checker_results ]; then
-    mkdir -p ./_autograding/post_checker_results
+if [ ! -d ./_autograding/post_submission_results ]; then
+    mkdir -p ./_autograding/post_submission_results
 fi
 
 set +e
 for filename in `find . -type f -name "*.py"`; do
-	if [[ "$filename" != *"checker.py" ]] && [[ "$filename" != *"sol.py" ]]; then
+	if [[ "$filename" != *"test_assignment${assignment_num}"*".py" ]] && [[ "$filename" != *"sol.py" ]]; then
 	  echo "$filename"
 
 	  copy_data_files
 
 	  # using SIGINT so that we get a nice traceback
 	  # using --full-trace so that the student / we get a stack trace to find what was running when it was killed.
-	  timeout  --signal=SIGINT --foreground "$timeout_duration"s pytest --full-trace --junitxml=./_autograding/post_checker_results/"$filename".xml "assignment${assignment_num}_postsubmission_checker.py" "$filename" 1> ./_autograding/post_checker_results/"$filename"_their_output.out
+	  timeout  --signal=SIGINT --foreground "$timeout_duration"s pytest --full-trace --junitxml=./_autograding/post_submission_results/"$filename".xml "test_assignment${assignment_num}_postsubmission.py" "$filename" 1> ./_autograding/post_submission_results/"$filename"_their_output.out
 	  # timeout returns 124 if the command timed out.  
 	  # see https://stackoverflow.com/questions/38534097/bash-if-command-timeout-execute-something-else
 	  timeout_status=$?
 
 	  if [[ $timeout_status -eq 124 ]]; then
-	  	message="🐢 checking $filename with assignment${assignment_num}_postsubmission_checker.py timed out after $timeout_duration seconds, and consequently generated no test results.  automatically generated result containing one failing test written instead."
+	  	message="🐢 testing $filename with test_assignment${assignment_num}_postsubmission.py timed out after $timeout_duration seconds, and consequently generated no test results.  automatically generated result containing one failing test written instead."
 	  	echo $message
-	  	echo $message >> ./_autograding/post_checker_results/"$filename"_their_output.out 
-	  	python3 "${SCRIPT_DIR}"/make_timeout_xml.py ./_autograding/post_checker_results/"$filename".xml $timeout_duration
+	  	echo $message >> ./_autograding/post_submission_results/"$filename"_their_output.out 
+	  	python3 "${SCRIPT_DIR}"/make_timeout_xml.py ./_autograding/post_submission_results/"$filename".xml $timeout_duration
 	  fi
 
 	fi
@@ -202,13 +201,11 @@ for filename in `find . -type f -name "*.py"`; do
 done;
 
 # remove empty files
-find ./_autograding/post_checker_results/ -name "*output.out" -size  0  -delete
+find ./_autograding/post_submission_results/ -name "*output.out" -size  0  -delete
+
 
 set -e
-mv "./assignment${assignment_num}_postsubmission_checker.py" ./_autograding
-
-
-mv "./assignment${assignment_num}_sol.py" ./_autograding
+# i used to move the unit tests and solution into _autograding, but removed it.
 
 
 ####################################

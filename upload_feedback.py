@@ -329,15 +329,15 @@ def upload_pytest_feedback(data_this_student, submission, assignment, dry_run):
             test_output_file_name_root = f'{a}_{b}_{c}'
             test_output_file_name = 'unfound'
 
-            for f in os.listdir(join('_autograding',f'{pre_or_post}_checker_results')):
+            for f in os.listdir(join('_autograding',f'{pre_or_post}_submission_results')):
                 if f.startswith(test_output_file_name_root) and f.endswith('.out'):
                     test_output_file_name = f
                     break
 
             if (test_output_file_name == "unfound"):
-                raise RuntimeError(f"failed to find the {pre_or_post}-checker result filename for student {a}!!!")
+                raise RuntimeError(f"failed to find the {pre_or_post}-submission unit test result filename for student {a}!!!")
 
-        return join('_autograding',f'{pre_or_post}_checker_results',test_output_file_name)
+        return join('_autograding',f'{pre_or_post}_submission_results',test_output_file_name)
     
 
     def do_feedback(pre_or_post):
@@ -345,11 +345,11 @@ def upload_pytest_feedback(data_this_student, submission, assignment, dry_run):
         p = float(data_this_student[f'percent_pass_{pre_or_post}'])
 
         if p<1:
-            processed_feedback_filename = join('_autograding',f'{pre_or_post}submission_checker_auto_feedback.pdf')
+            processed_feedback_filename = join('_autograding',f'{pre_or_post}submission_unit_test_auto_feedback.pdf')
             feedback_to_pdf(data_this_student[f'auto_feedback_{pre_or_post}'], processed_feedback_filename)
 
             test_output_file_name = get_raw_output(pre_or_post)
-            f = f"Not all unit tests passed in the {pre_or_post}-checker, so these next two uploaded files contain machine-generated results."
+            f = f"Not all unit tests passed in the {pre_or_post}-submission unit tests, so these next two uploaded files contain machine-generated results."
             if not dry_run:
                 submission.edit(comment={'text_comment':f})
                 submission.upload_comment(test_output_file_name)
@@ -392,8 +392,8 @@ def upload_score(data_this_student, submission, assignment, extra_category_names
 
     report = 'Explanation of grade given:\n\n'
 
-    report += get_and_format_as_float('score_from_presubmission_checker')
-    report += get_and_format_as_float('score_from_postsubmission_checker')
+    report += get_and_format_as_float('score_presubmission')
+    report += get_and_format_as_float('score_postsubmission')
 
 
     for cat in extra_category_names:

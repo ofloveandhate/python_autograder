@@ -39,7 +39,7 @@ Each assignment uses the `pytest` library for unit tests, in two blocks: one is 
 4. Hope
 5. The results should be contained in a folder called `_autograding` (the _ is there to keep it at the top).
 6. Inspect the results. You should see
-  * `checker_results.csv`, for your uploading pleasure
+  * `unit_test_results.csv`, for your viewing pleasure
   * `code_feedback_Section_X.md`.  
   * two results folders
   * The checkers which were executed.  
@@ -58,7 +58,7 @@ In the local folder for your course content (environment variable $DS710_REPO_LO
 
 We assume your course is set up with one folder per "Lesson", and that each lesson has one assignment.  Furthermore, each assignment has two `.py` files associated with it, with `N` being a placeholder for whatever you want:
 * `Lesson_N/assignmentN_checker.py` -- contains `pytest` unittests which are distributed to the students, so that they can run the tests as they solve the problems.  Try to put as many tests in here as possible, so that the students have maximal code coverage, but without spoiling the actual coded solutions.  So, test data with solutions is golden, but a function solving the problem  should be reserved for the postsubmission checker.
-* `Lesson_N/assignmentN_postsubmission_checker.py` -- held privately, containing programmatic solutions to the problems.  If you distribute these, you will spoil the assignment forever.
+* `Lesson_N/test_assignmentN_postsubmission.py` -- held privately, containing programmatic solutions to the problems.  If you distribute these, you will spoil the assignment forever.
 * Any necessary data files, with arbitrary names, a list of which comes next:
 
 These files will be copied into the working folder when you run the autograder (and then moved into a subfolder e.g. `submissions/_autograding` when autograding is complete).
@@ -79,8 +79,7 @@ The student *must* submit their code to Canvas as a file upload (not an attachme
 
 #### Important notes about student submissions:
 
-You should know and communicate the following to your students:
-* ⚠️ The student must submit *all* files with every attempt!!!!!  You cannot programmatically enforce this, unfortunately.  The bulk download feature on Canvas will only download the files from their latest submission.
+The downloading feature in this set of tools will download the most recent attached files of a base name, but only from ungraded submissions.  
 
 
 ---
@@ -91,7 +90,7 @@ You should know and communicate the following to your students:
 
 * `autograde.sh` -- the core file, a bash script.  Run it with two arguments -- the course code, and the shortcode of the assignment.  
 
-* `assignment_grade_collector.py` -- uses Pandas to parse the checker results files in `_autograding/pre_checker_results` and `_autograding/post_checker_results`, and turn them into the feedback files and the csv with scores.
+* `assignment_grade_collector.py` -- uses Pandas to parse the checker results files in `_autograding/pre_submission_results` and `_autograding/post_submission_results`, and turn them into the feedback files and the csv with scores.
 
 * `get_current_students.py` -- A python file which uses your Canvas API_KEY to get the current student list.  Uses `canvas_course_ids.json`.
 * `readme.md` -- this file, aren't you glad it's here 🌈
