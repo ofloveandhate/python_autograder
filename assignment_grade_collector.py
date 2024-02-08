@@ -397,7 +397,7 @@ def additional_processing_grades(grades, autograding_specs):
         grades[cat] = '   '  # make space for these in the sheet
 
 
-    # grades['score_reflection'] = '   '  # make space for these in the sheet
+    grades['score_reflection'] = '   '  # make space for these in the sheet
     grades['score_given'] = '   '  # make space for these in the sheet
 
 
