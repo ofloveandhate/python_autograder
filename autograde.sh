@@ -69,23 +69,20 @@ fi
 ################3
 # move pdf's to make view less shitty
 echo "moving pdf's to ./_reflections"
-#python3 ${SCRIPT_DIR}/move_reflections.py
+python3 ${SCRIPT_DIR}/move_reflections.py
 
 
 ##########
 # copy necessary data files
 
 # if the assignment has a spec for needed data files
-#dfiles="${!COURSE_REPO_LOC}/_course_metadata/necessary_data_files/$2.txt"
-dfiles="/c/Users/westmr/GitClones/ds710/Lesson_3/_course_metadata/necessary_data_files/$2.txt"
+dfiles="${!COURSE_REPO_LOC}/_course_metadata/necessary_data_files/$2.txt"
 if test -f $dfiles; then
 	echo "copying data files as described in $dfiles"
 	while IFS="" read -r p || [ -n "$p" ]
 	do
-		#cp "${!COURSE_REPO_LOC}/Lesson_$2/$p" ./
-		cp "/c/Users/westmr/GitClones/ds710/Lesson_$2/$p" ./
-		#echo "    copied " "${!COURSE_REPO_LOC}/Lesson_$2/$p"
-		echo "    copied " "/c/Users/westmr/GitClones/ds710/Lesson_$2/$p"
+		cp "${!COURSE_REPO_LOC}/Lesson_$2/$p" ./
+		echo "    copied " "${!COURSE_REPO_LOC}/Lesson_$2/$p"
 	done < $dfiles
 fi
 
@@ -96,16 +93,14 @@ fi
 
 
 # copy the checker file to this folder.  this is because the checker imports the file, and if it's not in the same location, things break.
-#prechecker=${!COURSE_REPO_LOC}/Lesson_$2/assignment$2_checker.py
-prechecker=/c/Users/westmr/GitClones/ds710/Lesson_$2/assignment$2_checker.py
+prechecker=${!COURSE_REPO_LOC}/Lesson_$2/assignment$2_checker.py
 echo "grading using pre-submission checker $prechecker"
 
 cp "$prechecker" ./
 
 
 # copy the solutions file to this folder.  this is because the checker imports the file, and if it's not in the same location, things break.
-#solutionsfile=${!COURSE_REPO_LOC}/Lesson_$2/assignment$2_sol.py
-solutionsfile=/c/Users/westmr/GitClones/ds710/Lesson_$2/assignment$2_sol.py
+solutionsfile=${!COURSE_REPO_LOC}/Lesson_$2/assignment$2_sol.py
 echo "using instructor solution from file $solutionsfile"
 
 cp "$solutionsfile" ./
@@ -134,7 +129,7 @@ for filename in `find . -type f -name "*.py"`; do
 	  	echo "incorrectly named submission, $filename"
 	  	continue
 	  fi
-	  timeout --foreground 30s python -m pytest --junitxml=./_autograding/pre_checker_results/"$filename".xml assignment$2_checker.py "$filename" 1> ./_autograding/pre_checker_results/"$filename"_their_output.out
+	  timeout --foreground 30s pytest --junitxml=./_autograding/pre_checker_results/"$filename".xml assignment$2_checker.py "$filename" 1> ./_autograding/pre_checker_results/"$filename"_their_output.out
 	fi
 done #< <(find . -maxdepth 1 -type d -print0)
 
@@ -147,8 +142,7 @@ mv "./assignment$2_checker.py" ./_autograding
 set -e
 ################
 # run the post-submission checker for every submitted file
-#postchecker="${!COURSE_REPO_LOC}/Lesson_$2/assignment$2_postsubmission_checker.py"
-postchecker="/c/Users/westmr/GitClones/ds710/Lesson_$2/assignment$2_postsubmission_checker.py"
+postchecker="${!COURSE_REPO_LOC}/Lesson_$2/assignment$2_postsubmission_checker.py"
 echo "grading using post-submission checker $postchecker"
 cp "$postchecker" ./
 
@@ -160,7 +154,7 @@ set +e
 for filename in `find . -type f -name "*.py"`; do
 	if [[ "$filename" != *"checker.py" ]] && [[ "$filename" != *"sol.py" ]]; then
 	  echo "$filename"
-	  timeout --foreground 30s python -m pytest --junitxml=./_autograding/post_checker_results/"$filename".xml "assignment$2_postsubmission_checker.py" "$filename" 1> ./_autograding/post_checker_results/"$filename"_their_output.out
+	  timeout --foreground 30s pytest --junitxml=./_autograding/post_checker_results/"$filename".xml "assignment$2_postsubmission_checker.py" "$filename" 1> ./_autograding/post_checker_results/"$filename"_their_output.out
 	fi
 
 done;
