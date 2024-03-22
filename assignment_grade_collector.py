@@ -86,6 +86,7 @@ def collect(path):
     for f in files:
         if f.endswith('.xml') and not f.endswith('_sol.py.xml'):
 
+
             dirname = os.path.dirname(f)
             pyname = os.path.basename(f[:-4])
 
@@ -254,7 +255,7 @@ def reformat_grades_csv(fname):
     def compute_column_sizes(as_lines):
         d = [split_into_cols(ell) for ell in as_lines[1:]] # [1:] to skip the header row
         temp_df = pd.DataFrame(data=d)
-        return temp_df.applymap(lambda x: len(x)).max()
+        return temp_df.map(lambda x: len(x)).max()
 
     def format_line(sizes, row):
         r = row.split('"',2)
@@ -336,8 +337,8 @@ def process_feedback_and_grades(feedback_and_grades, reflection_message):
     feedback_and_grades = feedback_and_grades.copy()  # stupid warnings cause so much headache.  silence!
 
 
-    feedback_and_grades['auto_feedback_pre'].fillna('no submission, no pre-submission unit tests executed',inplace=True)
-    feedback_and_grades['auto_feedback_post'].fillna('no submission, no post-submission unit tests executed',inplace=True)
+    feedback_and_grades['auto_feedback_pre'] = feedback_and_grades['auto_feedback_pre'].fillna('no submission, no pre-submission unit tests executed')
+    feedback_and_grades['auto_feedback_post'] = feedback_and_grades['auto_feedback_post'].fillna('no submission, no post-submission unit tests executed')
 
 
     # print(feedback_and_grades.columns)
