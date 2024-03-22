@@ -179,7 +179,10 @@ set +e
 for filename in `find . -type f -name "*.py"`; do
 	if [[ "$filename" != *"test_assignment${assignment_num}"*".py" ]] && [[ "$filename" != *"sol.py" ]]; then
 	  echo "$filename"
-
+	  if [[ "$filename" != *"assignment${assignment_num}"*".py" ]]; then
+	  	echo "incorrectly named submission, $filename"
+	  	continue
+	  fi
 	  copy_data_files
 
 	  # using SIGINT so that we get a nice traceback
