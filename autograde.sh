@@ -1,8 +1,14 @@
 #!/bin/bash
-
+#
+# example call to this script:
+# autograde.sh -a 6c -r DS710 -p 1, to use a course folder with name contained in environment variable `DS710_REPO_LOC`, to grade assignment 6c, and to skip running pre-tests (so, assuming they've been done already).
+#
+#
 # this script assumes that `python` is `python3`.
 # why would it be anything else ;)
-
+#
+#
+#
 # this script *must* be called with *two* named arguments:
 # -r: the name of the class, in an exact match as part of 
 # -a: give the number of the homework to be graded, e.g. either 1 or 4 in autograde.sh DS710 1, or autograde.sh DS710 4a
@@ -33,20 +39,21 @@ command -v timeout >/dev/null 2>&1 || { echo >&2 "'autograde.sh' requires 'timeo
 
 
 
-
+# set default values for these variables.  
 timeout_duration="60" # number of seconds. 
 course_number="UNSET_USE_DASH_r"
 assignment_num="UNSET_USE_DASH_a"
 skip_pre=0
 skip_post=0
 
+# get values from the options.  only single-variable option names are allowed at the moment.  deal.
 while getopts ":p:P:a:r:t" opt; do
   case $opt in
     p) 
-		skip_pre=1
+		skip_pre=1 # no matter what value is passed in, the value of the variable becomes 1.  a value must still be passed in.
     	;;
     P) 
-		skip_post=1
+		skip_post=1 # no matter what value is passed in, the value of the variable becomes 1.  a value must still be passed in.
     	;;
     a)
 		assignment_num=$OPTARG
