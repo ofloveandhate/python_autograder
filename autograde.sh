@@ -84,17 +84,15 @@ echo "course repo location being used: ${!COURSE_REPO_LOC}"
 # https://superuser.com/questions/688882/how-to-test-if-a-variable-is-equal-to-a-number-in-shell
 if [[ "${course_number}" == "UNSET_USE_DASH_r" ]];
 	then
-		# https://stackoverflow.com/questions/3601515/how-to-check-if-a-variable-is-set-in-bash
 		echo "use a named argument, with flag -r, to specify the course number.  e.g. the '-r DS710' or '-r DS150' in 'autograde.sh -r DS710  -a 1', or 'autograde.sh -r DS150 -a 4a'.  this is used to build an environment variable name, like 'DS710_REPO_LOC'";
-		exit 1 # https://stackoverflow.com/questions/1378274/in-a-bash-script-how-can-i-exit-the-entire-script-if-a-certain-condition-occurs
+		exit 3 # https://stackoverflow.com/questions/1378274/in-a-bash-script-how-can-i-exit-the-entire-script-if-a-certain-condition-occurs
 fi
 
 
 if [[ "${assignment_num}" == "UNSET_USE_DASH_a" ]];
 	then
-		# https://stackoverflow.com/questions/3601515/how-to-check-if-a-variable-is-set-in-bash
 		echo "use a named argument, with flag -a, to specify the assigment number.  e.g. the '-a 1' or '-a 4a' in 'autograde.sh -r DS710 -a 1', or 'autograde.sh -r DS150 -a 4a'";
-		exit 1 # https://stackoverflow.com/questions/1378274/in-a-bash-script-how-can-i-exit-the-entire-script-if-a-certain-condition-occurs
+		exit 4 # https://stackoverflow.com/questions/1378274/in-a-bash-script-how-can-i-exit-the-entire-script-if-a-certain-condition-occurs
 fi
 
 
@@ -103,7 +101,7 @@ if [ -z ${COURSE_REPO_LOC+x} ];
 	then
 		# https://stackoverflow.com/questions/3601515/how-to-check-if-a-variable-is-set-in-bash
 		echo "environment variable '$COURSE_REPO_LOC' unset.  set it to the path of the github repo for '$course_number'.";
-		exit 1 # https://stackoverflow.com/questions/1378274/in-a-bash-script-how-can-i-exit-the-entire-script-if-a-certain-condition-occurs
+		exit 5 # https://stackoverflow.com/questions/1378274/in-a-bash-script-how-can-i-exit-the-entire-script-if-a-certain-condition-occurs
 fi
 
 
@@ -155,7 +153,7 @@ cp "$solutionsfile" ./
 
 
 
-
+# https://superuser.com/questions/688882/how-to-test-if-a-variable-is-equal-to-a-number-in-shell
 if [[ "$skip_pre" -eq 0 ]]; then
 
 	################
@@ -221,6 +219,12 @@ fi # re: if skip_pre
 set -e
 ################
 
+#
+#
+# Run the post-submission tests
+#
+#
+# https://superuser.com/questions/688882/how-to-test-if-a-variable-is-equal-to-a-number-in-shell
 if [[ "$skip_post" -eq 0 ]]; then
 	# run the post-submission unit tests for every submitted file
 	postsuite="${!COURSE_REPO_LOC}/Lesson_${assignment_num}/test_assignment${assignment_num}_postsubmission.py"
@@ -284,5 +288,5 @@ python3 "${SCRIPT_DIR}"/assignment_grade_collector.py $COURSE_REPO_LOC $assignme
 
 
 echo "done.  results and artifacts in ./autograding/"
-echo "put your comments in _autograding/feedback.xml, and then run 'python3 ${SCRIPT_DIR}/upload_feedback.py $1_REPO_LOC $assignment_num'"
+echo "put your comments in _autograding/feedback.xml, and then run 'python3 ${SCRIPT_DIR}/upload_feedback.py $COURSE_REPO_LOC $assignment_num'"
 echo "grades are written into same xml document as feedback!"
