@@ -47,7 +47,7 @@ skip_pre=0
 skip_post=0
 
 # get values from the options.  only single-variable option names are allowed at the moment.  deal.
-while getopts ":p:P:a:r:t" opt; do
+while getopts ":p:P:a:r:t:" opt; do
   case $opt in
     p) 
 		skip_pre=1 # no matter what value is passed in, the value of the variable becomes 1.  a value must still be passed in.
