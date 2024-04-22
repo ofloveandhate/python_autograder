@@ -45,9 +45,10 @@ course_number="UNSET_USE_DASH_r"
 assignment_num="UNSET_USE_DASH_a"
 skip_pre=0
 skip_post=0
+run_only='*'
 
 # get values from the options.  only single-variable option names are allowed at the moment.  deal.
-while getopts ":p:P:a:r:t:" opt; do
+while getopts ":p:P:a:r:t:u:h" opt; do
   case $opt in
     p) 
 		skip_pre=1 # no matter what value is passed in, the value of the variable becomes 1.  a value must still be passed in.
@@ -63,6 +64,23 @@ while getopts ":p:P:a:r:t:" opt; do
 		;;
 	r)
 		course_number=$OPTARG
+		;;
+	u)
+		run_only=$OPTARG
+		;;
+	h)
+		echo "help:"
+		echo "-p anything : skip pre-tests"
+		echo "-P anything : skip post-tests"
+		echo "-t duration : timeout is duration seconds"
+		echo "-r coursnum : use use env variable COURSNUM_REPO_LOC -- the REPO_LOC is automatically added."
+		echo "-a assgnnum : grade assignment number assgnnum.  the naming convention for actual assignments is in the repo, in the _course_metadata folder."
+		echo "-u filter   : run only code files matching this filter.  for example 'rasp*.py'"
+		echo "-h          : this help menu"
+		echo ""
+		echo ""
+		echo "i do hope you have a nice day, and that this tool is not a nightmare"
+		exit 0
 		;;
     \?) echo "Invalid option -$OPTARG" >&2
     	exit 1
@@ -111,7 +129,7 @@ fi
 
 if test -n "$(find ./ -maxdepth 1 -name '*.py' -print -quit)"
 then
-    echo "autograding '$course_number' assignment '$assignment_num' using autograding files from '$COURSE_REPO_LOC', with timeout '$timeout_duration'";
+    echo "autograding '$course_number' assignment '$assignment_num' using autograding files from '$COURSE_REPO_LOC', with timeout '$timeout_duration' and name filter '$run_only'";
 else
 	echo "no python files found in your current directory.  are you in the correct directory?"
     exit -42
@@ -180,7 +198,7 @@ if [[ "$skip_pre" -eq 0 ]]; then
 	OIFS="$IFS"
 	IFS=$'\n'
 
-	for filename in `find . -type f -name "*.py"`; do
+	for filename in `find . -type f -name "*.py" -name "${run_only}"`; do
 		# about the 2>, see https://stackoverflow.com/questions/14246119/python-how-can-i-redirect-the-output-of-unittest-obvious-solution-doesnt-wor/22710204
 
 		if [[ "$filename" != *"test_assignment${assignment_num}"*".py" ]] && [[ "$filename" != *"sol.py" ]]; then
@@ -189,6 +207,7 @@ if [[ "$skip_pre" -eq 0 ]]; then
 		  	echo "incorrectly named submission, $filename"
 		  	continue
 		  fi
+
 
 		  copy_data_files
 
@@ -236,13 +255,15 @@ if [[ "$skip_post" -eq 0 ]]; then
 	fi
 
 	set +e
-	for filename in `find . -type f -name "*.py"`; do
+	for filename in `find . -type f -name "*.py" -name "${run_only}"`; do
 		if [[ "$filename" != *"test_assignment${assignment_num}"*".py" ]] && [[ "$filename" != *"sol.py" ]]; then
 		  echo "$filename"
 		  if [[ "$filename" != *"assignment${assignment_num}"*".py" ]]; then
 		  	echo "incorrectly named submission, $filename"
 		  	continue
 		  fi
+
+
 		  copy_data_files
 
 		  # using SIGINT so that we get a nice traceback
