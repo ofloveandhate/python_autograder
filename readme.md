@@ -1,6 +1,8 @@
 # Intro
 
-This repo contains code used for assistive autograding homework submissions, submitted through Canvas and downloaded in bulk.  It produces a csv file report on student unit test pass/fails, and a generated markdown file which can be used to give feedback.
+This repo contains code used for assistive autograding homework submissions, submitted through Canvas and downloaded in bulk.  It produces 
+* `unit_test_results.csv` -- a csv file report on student unit test pass/fails, and 
+* `feedback.xml` -- a generated xml file which can be used to give feedback.  give scores and write feedback in here, and then upload them to canvas using `upload_feedback.py`.
 
 ---
 
@@ -42,7 +44,7 @@ Each assignment uses the `pytest` library for unit tests, in two blocks: one is 
   * `unit_test_results.csv`, for your viewing pleasure
   * `code_feedback_Section_X.md`.  
   * two results folders
-  * The checkers which were executed.  
+  * The unit tests which were executed.  
   * The data files should probably also be in here.  If not, then add code to `autograde.sh` to move them in.  
 7. If satisfied, copy the feedback files to somewhere else or rename them, so that if you have to re-run the autograder, you won't lose your comments.
 8. Open the submissions folder with the code in a nice text editor.  Open the feedback files in another.  Grade as you will.
@@ -57,11 +59,11 @@ In the local folder for your course content (environment variable $DS710_REPO_LO
 ## Per-lesson files
 
 We assume your course is set up with one folder per "Lesson", and that each lesson has one assignment.  Furthermore, each assignment has two `.py` files associated with it, with `N` being a placeholder for whatever you want:
-* `Lesson_N/assignmentN_checker.py` -- contains `pytest` unittests which are distributed to the students, so that they can run the tests as they solve the problems.  Try to put as many tests in here as possible, so that the students have maximal code coverage, but without spoiling the actual coded solutions.  So, test data with solutions is golden, but a function solving the problem  should be reserved for the postsubmission checker.
+* `Lesson_N/test_assignmentN.py` -- contains `pytest` unittests which are distributed to the students, so that they can run the tests as they solve the problems.  Try to put as many tests in here as possible, so that the students have maximal code coverage, but without spoiling the actual coded solutions.  So, test data with solutions is golden, but a function solving the problem  should be reserved for the postsubmission tests.
 * `Lesson_N/test_assignmentN_postsubmission.py` -- held privately, containing programmatic solutions to the problems.  If you distribute these, you will spoil the assignment forever.
-* Any necessary data files, with arbitrary names, a list of which comes next:
+* Any necessary data files, with arbitrary names.  These files should be in the lesson's folder, and these files listed one-per-line at `$COURSE_REPO_LOC/_course_metadata/necessary_data_files/$ASSIGNMENTNUM.txt`.  If the necessary_data_files folder doesn't contain a txt file for this assignment, no files will be copied.
 
-These files will be copied into the working folder when you run the autograder (and then moved into a subfolder e.g. `submissions/_autograding` when autograding is complete).
+The above files will be copied into the working folder when you run the autograder (and then moved into a subfolder e.g. `submissions/_autograding` when autograding is complete).
 
 ## Canvas course metadata 
 
@@ -90,7 +92,7 @@ The downloading feature in this set of tools will download the most recent attac
 
 * `autograde.sh` -- the core file, a bash script.  Run it with two arguments -- the course code, and the shortcode of the assignment.  
 
-* `assignment_grade_collector.py` -- uses Pandas to parse the checker results files in `_autograding/pre_submission_results` and `_autograding/post_submission_results`, and turn them into the feedback files and the csv with scores.
+* `assignment_grade_collector.py` -- uses Pandas to parse the unit test results files in `_autograding/pre_submission_results` and `_autograding/post_submission_results`, and turn them into the feedback files and the csv with scores.
 
 * `get_current_students.py` -- A python file which uses your Canvas API_KEY to get the current student list.  Uses `canvas_course_ids.json`.
 * `readme.md` -- this file, aren't you glad it's here 🌈
