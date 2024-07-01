@@ -296,9 +296,17 @@ set -e
 
 ####################################
 # get the current student list, so that students who didn't submit can get 0's
-echo 'getting current student list from Canvas, automatically'
-echo "python3 "${SCRIPT_DIR}"/get_current_students.py $COURSE_REPO_LOC"
-python3 "${SCRIPT_DIR}"/get_current_students.py $COURSE_REPO_LOC
+
+if test -n "$(find ./ -maxdepth 2 -name 'student_list.csv')"
+then
+	echo "reusing existing student list"
+else
+	echo 'getting current student list from Canvas, automatically'
+	echo "python3 "${SCRIPT_DIR}"/get_current_students.py $COURSE_REPO_LOC"
+	python3 "${SCRIPT_DIR}"/get_current_students.py $COURSE_REPO_LOC
+fi
+
+
 
 
 #################################
