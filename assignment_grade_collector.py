@@ -354,7 +354,7 @@ def process_feedback_and_grades(feedback_and_grades, reflection_message):
 
         else:
             n = row['sortable_name']
-            return f"\n\nInstructor's manually written feedback for {n}:\n\n\n## Code\n\n*\n\n## Reflection\n\n{reflection_message}\n\n---\n\n\n"
+            return f"\n\nInstructor's manually written feedback for {n}:\n\n\n## Code\n\n* \n\n## Reflection\n\n{reflection_message}  \n\n---\n\n\n"
 
 
     feedback_and_grades['manual_feedback'] = feedback_and_grades.apply(default_feedback_message, axis=1) # TODO this should be read from a course meta
